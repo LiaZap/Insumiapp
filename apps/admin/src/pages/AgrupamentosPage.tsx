@@ -1,0 +1,264 @@
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AGRUPAMENTO_STATUS_LABEL,
+  type AgrupamentoDetalhe,
+  type AgrupamentoResumo,
+} from '@insumia/shared';
+import { api } from '../lib/api';
+import { dateTime } from '../lib/format';
+import { useTableControls } from '../lib/useTableControls';
+import { exportToCsv } from '../lib/csv';
+import {
+  PageHeader,
+  Card,
+  Badge,
+  EmptyRow,
+  Spinner,
+  SearchInput,
+  SortHeader,
+  Pagination,
+  ExportButton,
+} from '../components/ui';
+
+const FILTERS = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'aberto', label: 'Abertos' },
+  { key: 'em_cotacao', label: 'Em cotação' },
+  { key: 'cotado', label: 'Cotados' },
+] as const;
+
+export function AgrupamentosPage() {
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<string>('todos');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['agrupamentos'],
+    queryFn: async () => (await api.get<AgrupamentoResumo[]>('/api/v1/agrupamentos')).data,
+  });
+
+  const detalhe = useQuery({
+    queryKey: ['agrupamento', selectedId],
+    queryFn: async () =>
+      (await api.get<AgrupamentoDetalhe>(`/api/v1/agrupamentos/${selectedId}`)).data,
+    enabled: !!selectedId,
+  });
+
+  const fechar = useMutation({
+    mutationFn: async (id: string) =>
+      (await api.patch<AgrupamentoDetalhe>(`/api/v1/agrupamentos/${id}/fechar`)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agrupamentos'] });
+      qc.invalidateQueries({ queryKey: ['agrupamento', selectedId] });
+    },
+  });
+
+  const byFilter = useMemo(
+    () => (data ?? []).filter((a) => filter === 'todos' || a.status === filter),
+    [data, filter],
+  );
+
+  const table = useTableControls(byFilter, {
+    searchText: (a) => `${a.numero} ${a.medicamento.nome} ${a.medicamento.fabricante ?? ''}`,
+    sortAccessors: {
+      medicamento: (a) => a.medicamento.nome,
+      pedidos: (a) => a.totalPedidos,
+      volume: (a) => a.totalVolume,
+      status: (a) => a.status,
+      criado: (a) => a.criadoEm,
+    },
+    initialSort: { key: 'volume', dir: 'desc' },
+  });
+
+  const handleExport = () =>
+    exportToCsv('agrupamentos', table.sorted, [
+      { header: 'Agrupamento', value: (a) => a.numero },
+      { header: 'Medicamento', value: (a) => a.medicamento.nome },
+      { header: 'Fabricante', value: (a) => a.medicamento.fabricante ?? '' },
+      { header: 'Pedidos', value: (a) => a.totalPedidos },
+      { header: 'Volume', value: (a) => a.totalVolume },
+      { header: 'Status', value: (a) => AGRUPAMENTO_STATUS_LABEL[a.status] },
+    ]);
+
+  return (
+    <div>
+      <PageHeader
+        title="Pedidos Agrupados"
+        subtitle="Demanda de várias clínicas agregada por medicamento — base da cotação em volume"
+        action={<ExportButton onClick={handleExport} />}
+      />
+      <div className="p-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex gap-2">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  filter === f.key
+                    ? 'bg-brand-500 text-white'
+                    : 'bg-white text-ink-500 hover:bg-brand-50'
+                }`}
+              >
+                {f.label} ({(data ?? []).filter((a) => f.key === 'todos' || a.status === f.key).length})
+              </button>
+            ))}
+          </div>
+          <SearchInput
+            value={table.query}
+            onChange={table.setQuery}
+            placeholder="Buscar medicamento..."
+          />
+        </div>
+
+        <Card>
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            <>
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                    <SortHeader label="Medicamento" sortKey="medicamento" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                    <th className="px-6 py-3 font-medium">Fabricante</th>
+                    <SortHeader label="Pedidos" sortKey="pedidos" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                    <SortHeader label="Volume total" sortKey="volume" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                    <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {table.pageRows.length === 0 ? (
+                    <EmptyRow colSpan={5} message="Nenhum agrupamento encontrado" />
+                  ) : (
+                    table.pageRows.map((a) => (
+                      <tr
+                        key={a.id}
+                        onClick={() => setSelectedId(a.id)}
+                        className="cursor-pointer hover:bg-surface-base"
+                      >
+                        <td className="px-6 py-3">
+                          <p className="font-medium text-ink-900">{a.medicamento.nome}</p>
+                          <p className="text-xs text-ink-400">{a.numero}</p>
+                        </td>
+                        <td className="px-6 py-3 text-ink-500">
+                          {a.medicamento.fabricante ?? '—'}
+                        </td>
+                        <td className="px-6 py-3 text-ink-700">{a.totalPedidos}</td>
+                        <td className="px-6 py-3 font-semibold text-brand-700">
+                          {a.totalVolume} un
+                        </td>
+                        <td className="px-6 py-3">
+                          <Badge status={a.status} label={AGRUPAMENTO_STATUS_LABEL[a.status]} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <Pagination
+                page={table.page}
+                totalPages={table.totalPages}
+                total={table.total}
+                onPage={table.setPage}
+              />
+            </>
+          )}
+        </Card>
+      </div>
+
+      {/* Drawer detalhe */}
+      {selectedId ? (
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-black/40"
+          onClick={() => setSelectedId(null)}
+        >
+          <div
+            className="h-full w-[480px] overflow-y-auto bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {detalhe.isLoading || !detalhe.data ? (
+              <Spinner />
+            ) : (
+              <>
+                <div className="flex items-start justify-between border-b border-black/5 px-6 py-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-brand-700">
+                      {detalhe.data.medicamento.nome}
+                    </h2>
+                    <p className="text-sm text-ink-500">
+                      {detalhe.data.numero} · {detalhe.data.medicamento.fabricante ?? '—'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedId(null)}
+                    className="text-2xl leading-none text-ink-400 hover:text-ink-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      status={detalhe.data.status}
+                      label={AGRUPAMENTO_STATUS_LABEL[detalhe.data.status]}
+                    />
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-brand-700">
+                        {detalhe.data.totalVolume} un
+                      </p>
+                      <p className="text-xs text-ink-400">
+                        {detalhe.data.totalPedidos} pedidos de clínicas
+                      </p>
+                    </div>
+                  </div>
+
+                  {detalhe.data.status === 'aberto' ? (
+                    <button
+                      onClick={() => fechar.mutate(detalhe.data!.id)}
+                      disabled={fechar.isPending}
+                      className="mt-5 w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      {fechar.isPending ? 'Fechando...' : 'Fechar agrupamento e cotar'}
+                    </button>
+                  ) : (
+                    <p className="mt-5 rounded-xl bg-surface-base px-4 py-3 text-xs text-ink-500">
+                      Agrupamento fechado em{' '}
+                      {detalhe.data.fechadoEm ? dateTime(detalhe.data.fechadoEm) : '—'}.
+                      {detalhe.data.status === 'em_cotacao'
+                        ? ' Próximo passo: enviar para fornecedores (em breve).'
+                        : ''}
+                    </p>
+                  )}
+
+                  <p className="mt-6 mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+                    Demanda por clínica
+                  </p>
+                  <div className="divide-y divide-black/5 rounded-xl border border-black/5">
+                    {detalhe.data.linhas.map((l) => (
+                      <div
+                        key={l.itemId}
+                        className="flex items-center justify-between px-4 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-ink-900">{l.clinica}</p>
+                          <p className="text-xs text-ink-400">
+                            {l.pedidoNumero} · {dateTime(l.criadoEm)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-brand-700">
+                          {l.quantidade} un
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

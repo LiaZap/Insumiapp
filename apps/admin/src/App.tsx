@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PedidosPage } from './pages/PedidosPage';
+import { AgrupamentosPage } from './pages/AgrupamentosPage';
 import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
@@ -26,6 +27,7 @@ export function App() {
       >
         <Route path="/" element={<DashboardPage />} />
         <Route path="/pedidos" element={<PedidosPage />} />
+        <Route path="/agrupamentos" element={<AgrupamentosPage />} />
         <Route path="/medicamentos" element={<MedicamentosPage />} />
         <Route path="/estoque" element={<EstoquePage />} />
         <Route path="/financeiro" element={<FinanceiroPage />} />

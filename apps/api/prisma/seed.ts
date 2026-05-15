@@ -182,9 +182,42 @@ async function main() {
     }
   }
 
+  // Backfill de agrupamentos — todo item de pedido pendente entra num
+  // agrupamento aberto do seu medicamento (compra coletiva).
+  const itensSemAgrupamento = await prisma.pedidoItem.findMany({
+    where: {
+      agrupamentoId: null,
+      pedido: { status: { in: ['aguardando_cotacao', 'cotado'] } },
+    },
+  });
+  // 1 agrupamento aberto por medicamento
+  const agrupamentoPorMed = new Map<string, string>();
+  for (const item of itensSemAgrupamento) {
+    let agrId = agrupamentoPorMed.get(item.medicamentoId);
+    if (!agrId) {
+      const existente = await prisma.agrupamento.findFirst({
+        where: { medicamentoId: item.medicamentoId, status: 'aberto' },
+      });
+      if (existente) {
+        agrId = existente.id;
+      } else {
+        const numero = `AGR-${Math.floor(100000 + Math.random() * 900000).toString(36).toUpperCase()}`;
+        const novo = await prisma.agrupamento.create({
+          data: { numero, medicamentoId: item.medicamentoId, status: 'aberto' },
+        });
+        agrId = novo.id;
+      }
+      agrupamentoPorMed.set(item.medicamentoId, agrId);
+    }
+    await prisma.pedidoItem.update({
+      where: { id: item.id },
+      data: { agrupamentoId: agrId },
+    });
+  }
+
   // eslint-disable-next-line no-console
   console.log(
-    `Seed ok: ${medicamentosSeed.length} medicamentos + estoque + ${clinicasSeed.length} clínicas + pedidos históricos`,
+    `Seed ok: ${medicamentosSeed.length} medicamentos + estoque + ${clinicasSeed.length} clínicas + pedidos + ${agrupamentoPorMed.size} agrupamentos`,
   );
 }
 

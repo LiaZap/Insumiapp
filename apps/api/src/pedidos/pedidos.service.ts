@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { CriarPedidoInput, EnviarCotacaoInput, PedidoStatus } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { AgrupamentosService } from '../agrupamentos/agrupamentos.service';
 
 const PEDIDO_INCLUDE = {
   itens: { include: { medicamento: true } },
@@ -165,29 +166,45 @@ export class PedidosService {
 
     const numero = `PED-${Date.now().toString(36).toUpperCase()}`;
 
-    const pedido = await this.prisma.pedido.create({
-      data: {
-        numero,
-        status: 'aguardando_cotacao',
-        total,
-        observacao: dto.observacao,
-        usuarioId,
-        itens: { create: itens },
-      },
-      include: { itens: { include: { medicamento: true } } },
-    });
+    const pedido = await this.prisma.$transaction(async (tx) => {
+      const novo = await tx.pedido.create({
+        data: {
+          numero,
+          status: 'aguardando_cotacao',
+          total,
+          observacao: dto.observacao,
+          usuarioId,
+          itens: { create: itens },
+        },
+        include: { itens: { include: { medicamento: true } } },
+      });
 
-    // Cria automaticamente conta a pagar (vencimento +7 dias)
-    const vencimento = new Date();
-    vencimento.setDate(vencimento.getDate() + 7);
-    await this.prisma.conta.create({
-      data: {
-        tipo: 'pagar',
-        descricao: `Pedido ${pedido.numero}`,
-        valor: total,
-        vencimento,
-        pedidoId: pedido.id,
-      },
+      // Cada item entra no agrupamento ABERTO do seu medicamento (compra coletiva)
+      for (const item of novo.itens) {
+        const agrupamentoId = await AgrupamentosService.agrupamentoAbertoId(
+          tx,
+          item.medicamentoId,
+        );
+        await tx.pedidoItem.update({
+          where: { id: item.id },
+          data: { agrupamentoId },
+        });
+      }
+
+      // Conta a pagar automática (vencimento +7 dias)
+      const vencimento = new Date();
+      vencimento.setDate(vencimento.getDate() + 7);
+      await tx.conta.create({
+        data: {
+          tipo: 'pagar',
+          descricao: `Pedido ${novo.numero}`,
+          valor: total,
+          vencimento,
+          pedidoId: novo.id,
+        },
+      });
+
+      return novo;
     });
 
     return pedido;

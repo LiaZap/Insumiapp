@@ -45,6 +45,14 @@ enum ContaStatus {
   cancelada
 }
 
+enum AgrupamentoStatus {
+  aberto       // acumulando itens de pedidos
+  em_cotacao   // fechado pelo admin, aguardando lances de fornecedores
+  cotado       // fornecedor vencedor escolhido
+  finalizado
+  cancelado
+}
+
 model User {
   id           String   @id @default(uuid())
   nome         String
@@ -78,6 +86,7 @@ model Medicamento {
   itensPedido   PedidoItem[]
   estoque       EstoqueItem[]
   movimentacoes Movimentacao[]
+  agrupamentos  Agrupamento[]
 
   @@index([nome])
   @@index([categoria])
@@ -116,11 +125,34 @@ model PedidoItem {
   precoUnitario Decimal @db.Decimal(12, 2)
   disponivel    Boolean @default(true)
   observacao    String?
+  agrupamentoId String?
 
-  pedido      Pedido      @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  medicamento Medicamento @relation(fields: [medicamentoId], references: [id])
+  pedido      Pedido       @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
+  agrupamento Agrupamento? @relation(fields: [agrupamentoId], references: [id])
 
   @@index([pedidoId])
+  @@index([agrupamentoId])
+}
+
+// Agrupamento — junta itens do mesmo medicamento de várias clínicas
+// para cotação em volume com fornecedores (compra coletiva).
+model Agrupamento {
+  id            String            @id @default(uuid())
+  numero        String            @unique
+  medicamentoId String
+  status        AgrupamentoStatus @default(aberto)
+  publicToken   String            @unique @default(uuid()) // link público p/ lance de fornecedor (fase 2)
+  observacao    String?
+  criadoEm      DateTime          @default(now())
+  fechadoEm     DateTime?
+  atualizadoEm  DateTime          @updatedAt
+
+  medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
+  itens       PedidoItem[]
+
+  @@index([status])
+  @@index([medicamentoId])
 }
 
 model EstoqueItem {
