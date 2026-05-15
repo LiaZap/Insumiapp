@@ -1,0 +1,195 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { CriarPedidoInput, EnviarCotacaoInput, PedidoStatus } from '@insumia/shared';
+import { PrismaService } from '../prisma/prisma.service';
+
+const PEDIDO_INCLUDE = {
+  itens: { include: { medicamento: true } },
+  usuario: { select: { id: true, nome: true, empresa: true, email: true } },
+} as const;
+
+@Injectable()
+export class PedidosService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async list(usuarioId: string) {
+    return this.prisma.pedido.findMany({
+      where: { usuarioId },
+      orderBy: { criadoEm: 'desc' },
+      include: {
+        itens: { include: { medicamento: true } },
+      },
+    });
+  }
+
+  /** Lista TODOS os pedidos — usado pelo back-office. */
+  async listAll() {
+    return this.prisma.pedido.findMany({
+      orderBy: { criadoEm: 'desc' },
+      include: {
+        itens: { include: { medicamento: true } },
+        usuario: { select: { id: true, nome: true, empresa: true, email: true } },
+      },
+    });
+  }
+
+  async atualizarStatus(id: string, status: PedidoStatus) {
+    const pedido = await this.prisma.pedido.findUnique({ where: { id } });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    return this.prisma.pedido.update({
+      where: { id },
+      data: { status },
+      include: {
+        itens: { include: { medicamento: true } },
+        usuario: { select: { id: true, nome: true, empresa: true, email: true } },
+      },
+    });
+  }
+
+  async findById(id: string) {
+    const p = await this.prisma.pedido.findUnique({
+      where: { id },
+      include: PEDIDO_INCLUDE,
+    });
+    if (!p) throw new NotFoundException('Pedido não encontrado');
+    return p;
+  }
+
+  /** Admin envia a cotação: define preço/disponibilidade por item, prazo e validade. */
+  async enviarCotacao(id: string, dto: EnviarCotacaoInput) {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id },
+      include: { itens: true },
+    });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    if (pedido.status !== 'aguardando_cotacao' && pedido.status !== 'cotado') {
+      throw new BadRequestException('Pedido não está em fase de cotação');
+    }
+
+    const itemMap = new Map(pedido.itens.map((i) => [i.id, i]));
+    let total = 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const ci of dto.itens) {
+        const item = itemMap.get(ci.itemId);
+        if (!item) throw new NotFoundException(`Item ${ci.itemId} não encontrado`);
+        if (ci.disponivel) total += ci.precoUnitario * item.quantidade;
+        await tx.pedidoItem.update({
+          where: { id: ci.itemId },
+          data: { precoUnitario: ci.precoUnitario, disponivel: ci.disponivel },
+        });
+      }
+
+      const validaAte = new Date();
+      validaAte.setHours(validaAte.getHours() + dto.validadeHoras);
+
+      await tx.pedido.update({
+        where: { id },
+        data: {
+          status: 'cotado',
+          total,
+          prazoEntregaDias: dto.prazoEntregaDias,
+          cotacaoObservacao: dto.observacao,
+          cotacaoEnviadaEm: new Date(),
+          cotacaoValidaAte: validaAte,
+          respondidaEm: null,
+        },
+      });
+
+      // Atualiza a conta a pagar vinculada com o novo total
+      await tx.conta.updateMany({
+        where: { pedidoId: id, tipo: 'pagar' },
+        data: { valor: total },
+      });
+    });
+
+    return this.findById(id);
+  }
+
+  /** Cliente aceita a cotação → pedido confirmado. */
+  async aceitarCotacao(id: string, usuarioId: string) {
+    const pedido = await this.prisma.pedido.findUnique({ where: { id } });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    if (pedido.usuarioId !== usuarioId) throw new BadRequestException('Pedido de outro usuário');
+    if (pedido.status !== 'cotado') throw new BadRequestException('Pedido não está cotado');
+    if (pedido.cotacaoValidaAte && pedido.cotacaoValidaAte < new Date()) {
+      throw new BadRequestException('Cotação expirada');
+    }
+    await this.prisma.pedido.update({
+      where: { id },
+      data: { status: 'confirmado', respondidaEm: new Date() },
+    });
+    return this.findById(id);
+  }
+
+  /** Cliente recusa a cotação → pedido cancelado. */
+  async recusarCotacao(id: string, usuarioId: string) {
+    const pedido = await this.prisma.pedido.findUnique({ where: { id } });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    if (pedido.usuarioId !== usuarioId) throw new BadRequestException('Pedido de outro usuário');
+    if (pedido.status !== 'cotado') throw new BadRequestException('Pedido não está cotado');
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pedido.update({
+        where: { id },
+        data: { status: 'cancelado', respondidaEm: new Date() },
+      });
+      await tx.conta.updateMany({
+        where: { pedidoId: id, status: { in: ['aberta', 'vencida'] } },
+        data: { status: 'cancelada' },
+      });
+    });
+    return this.findById(id);
+  }
+
+  async criar(usuarioId: string, dto: CriarPedidoInput) {
+    const medicamentoIds = dto.itens.map((i) => i.medicamentoId);
+    const meds = await this.prisma.medicamento.findMany({
+      where: { id: { in: medicamentoIds } },
+    });
+    const medMap = new Map(meds.map((m) => [m.id, m]));
+
+    const itens = dto.itens.map((i) => {
+      const med = medMap.get(i.medicamentoId);
+      if (!med) throw new NotFoundException(`Medicamento ${i.medicamentoId} não encontrado`);
+      return {
+        medicamentoId: i.medicamentoId,
+        quantidade: i.quantidade,
+        precoUnitario: i.precoUnitario ?? Number(med.precoUnitario),
+        observacao: i.observacao,
+      };
+    });
+
+    const total = itens.reduce(
+      (sum, item) => sum + Number(item.precoUnitario) * item.quantidade,
+      0,
+    );
+
+    const numero = `PED-${Date.now().toString(36).toUpperCase()}`;
+
+    const pedido = await this.prisma.pedido.create({
+      data: {
+        numero,
+        status: 'aguardando_cotacao',
+        total,
+        observacao: dto.observacao,
+        usuarioId,
+        itens: { create: itens },
+      },
+      include: { itens: { include: { medicamento: true } } },
+    });
+
+    // Cria automaticamente conta a pagar (vencimento +7 dias)
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + 7);
+    await this.prisma.conta.create({
+      data: {
+        tipo: 'pagar',
+        descricao: `Pedido ${pedido.numero}`,
+        valor: total,
+        vencimento,
+        pedidoId: pedido.id,
+      },
+    });
+
+    return pedido;
+  }
+}

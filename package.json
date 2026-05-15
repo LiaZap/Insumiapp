@@ -1,0 +1,38 @@
+{
+  "name": "insumia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Insumia — App mobile (iOS/Android) de gestão de pedidos, estoque e financeiro de insumos farmacêuticos",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "mobile": "pnpm --filter @insumia/mobile",
+    "api": "pnpm --filter @insumia/api",
+    "shared": "pnpm --filter @insumia/shared",
+    "dev:mobile": "pnpm --filter @insumia/mobile start",
+    "dev:api": "pnpm --filter @insumia/api start:dev",
+    "dev:db": "docker compose up -d postgres",
+    "dev": "pnpm dev:db && pnpm -r --parallel --filter=!@insumia/shared run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "clean": "pnpm -r exec rimraf node_modules dist .expo && rimraf node_modules"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "metro": "~0.81.0",
+      "metro-config": "~0.81.0",
+      "metro-runtime": "~0.81.0",
+      "metro-resolver": "~0.81.0",
+      "metro-core": "~0.81.0"
+    }
+  }
+}
