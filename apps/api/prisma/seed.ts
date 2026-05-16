@@ -182,6 +182,18 @@ async function main() {
     }
   }
 
+  // Fornecedores de exemplo
+  const fornecedoresSeed = [
+    { nome: 'Distribuidora Alfa Med', cnpj: '12.345.678/0001-90', email: 'comercial@alfamed.com.br' },
+    { nome: 'MedSupply Beta', cnpj: '23.456.789/0001-01', email: 'vendas@medsupply.com.br' },
+    { nome: 'Estética Distribuição Gama', cnpj: '34.567.890/0001-12', email: 'contato@gamadist.com.br' },
+    { nome: 'BioInsumos Delta', cnpj: '45.678.901/0001-23', email: 'cotacao@bioinsumos.com.br' },
+  ];
+  for (const f of fornecedoresSeed) {
+    const existe = await prisma.fornecedor.findFirst({ where: { nome: f.nome } });
+    if (!existe) await prisma.fornecedor.create({ data: f });
+  }
+
   // Backfill de agrupamentos — todo item de pedido pendente entra num
   // agrupamento aberto do seu medicamento (compra coletiva).
   const itensSemAgrupamento = await prisma.pedidoItem.findMany({

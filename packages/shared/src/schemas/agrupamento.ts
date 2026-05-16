@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { medicamentoSchema } from './medicamento';
+import { lanceSchema } from './fornecedor';
 
 export const agrupamentoStatusSchema = z.enum([
   'aberto',
@@ -47,5 +48,6 @@ export const agrupamentoDetalheSchema = agrupamentoResumoSchema.extend({
   publicToken: z.string(),
   observacao: z.string().nullable().optional(),
   linhas: z.array(agrupamentoLinhaSchema),
+  lances: z.array(lanceSchema),
 });
 export type AgrupamentoDetalhe = z.infer<typeof agrupamentoDetalheSchema>;

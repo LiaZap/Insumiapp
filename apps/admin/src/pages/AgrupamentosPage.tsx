@@ -45,13 +45,21 @@ export function AgrupamentosPage() {
     enabled: !!selectedId,
   });
 
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['agrupamentos'] });
+    qc.invalidateQueries({ queryKey: ['agrupamento', selectedId] });
+  };
+
   const fechar = useMutation({
     mutationFn: async (id: string) =>
       (await api.patch<AgrupamentoDetalhe>(`/api/v1/agrupamentos/${id}/fechar`)).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['agrupamentos'] });
-      qc.invalidateQueries({ queryKey: ['agrupamento', selectedId] });
-    },
+    onSuccess: invalidate,
+  });
+
+  const escolher = useMutation({
+    mutationFn: async (p: { id: string; lanceId: string }) =>
+      (await api.post(`/api/v1/agrupamentos/${p.id}/escolher/${p.lanceId}`)).data,
+    onSuccess: invalidate,
   });
 
   const byFilter = useMemo(
@@ -222,15 +230,89 @@ export function AgrupamentosPage() {
                     >
                       {fechar.isPending ? 'Fechando...' : 'Fechar agrupamento e cotar'}
                     </button>
-                  ) : (
-                    <p className="mt-5 rounded-xl bg-surface-base px-4 py-3 text-xs text-ink-500">
-                      Agrupamento fechado em{' '}
-                      {detalhe.data.fechadoEm ? dateTime(detalhe.data.fechadoEm) : '—'}.
-                      {detalhe.data.status === 'em_cotacao'
-                        ? ' Próximo passo: enviar para fornecedores (em breve).'
-                        : ''}
+                  ) : null}
+
+                  {/* Link público de lance */}
+                  {detalhe.data.status === 'em_cotacao' ? (
+                    <div className="mt-5 rounded-xl border border-brand-100 bg-brand-50/50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                        Link para fornecedores
+                      </p>
+                      <p className="mt-1 text-xs text-ink-500">
+                        Envie este link aos fornecedores — eles dão o lance sem precisar de login.
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          readOnly
+                          value={`${window.location.origin}/cotar/${detalhe.data.publicToken}`}
+                          className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs text-ink-600"
+                        />
+                        <button
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/cotar/${detalhe.data!.publicToken}`,
+                            )
+                          }
+                          className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Lances recebidos */}
+                  {detalhe.data.lances.length > 0 ? (
+                    <div className="mt-5">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+                        Lances recebidos ({detalhe.data.lances.length})
+                      </p>
+                      <div className="space-y-2">
+                        {[...detalhe.data.lances]
+                          .sort((a, b) => Number(a.precoUnitario) - Number(b.precoUnitario))
+                          .map((lance) => (
+                            <div
+                              key={lance.id}
+                              className={`flex items-center justify-between rounded-xl border p-3 ${
+                                lance.vencedor
+                                  ? 'border-success bg-green-50'
+                                  : 'border-black/10 bg-white'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-semibold text-ink-900">
+                                  {lance.fornecedorNome}
+                                  {lance.vencedor ? (
+                                    <span className="ml-2 text-xs font-bold text-success">
+                                      ✓ Vencedor
+                                    </span>
+                                  ) : null}
+                                </p>
+                                <p className="text-xs text-ink-500">
+                                  R$ {Number(lance.precoUnitario).toFixed(2)}/un ·{' '}
+                                  {lance.prazoEntregaDias} dias
+                                </p>
+                              </div>
+                              {detalhe.data!.status === 'em_cotacao' ? (
+                                <button
+                                  onClick={() =>
+                                    escolher.mutate({ id: detalhe.data!.id, lanceId: lance.id })
+                                  }
+                                  disabled={escolher.isPending}
+                                  className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                                >
+                                  Escolher
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : detalhe.data.status === 'em_cotacao' ? (
+                    <p className="mt-4 text-center text-xs text-ink-400">
+                      Aguardando lances dos fornecedores...
                     </p>
-                  )}
+                  ) : null}
 
                   <p className="mt-6 mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
                     Demanda por clínica

@@ -5,9 +5,11 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PedidosPage } from './pages/PedidosPage';
 import { AgrupamentosPage } from './pages/AgrupamentosPage';
+import { FornecedoresPage } from './pages/FornecedoresPage';
 import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
+import { CotarPublicoPage } from './pages/CotarPublicoPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
@@ -18,6 +20,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Página pública — fornecedor dá lance sem login */}
+      <Route path="/cotar/:token" element={<CotarPublicoPage />} />
       <Route
         element={
           <RequireAuth>
@@ -28,6 +32,7 @@ export function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/pedidos" element={<PedidosPage />} />
         <Route path="/agrupamentos" element={<AgrupamentosPage />} />
+        <Route path="/fornecedores" element={<FornecedoresPage />} />
         <Route path="/medicamentos" element={<MedicamentosPage />} />
         <Route path="/estoque" element={<EstoquePage />} />
         <Route path="/financeiro" element={<FinanceiroPage />} />

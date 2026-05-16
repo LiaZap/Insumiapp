@@ -150,9 +150,42 @@ model Agrupamento {
 
   medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
   itens       PedidoItem[]
+  lances      Lance[]
 
   @@index([status])
   @@index([medicamentoId])
+}
+
+// Fornecedor — quem oferta preço nos agrupamentos
+model Fornecedor {
+  id           String   @id @default(uuid())
+  nome         String
+  cnpj         String?
+  email        String?
+  telefone     String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  lances Lance[]
+}
+
+// Lance — oferta de um fornecedor para um agrupamento
+model Lance {
+  id               String   @id @default(uuid())
+  agrupamentoId    String
+  fornecedorId     String?
+  fornecedorNome   String
+  precoUnitario    Decimal  @db.Decimal(12, 2)
+  prazoEntregaDias Int
+  observacao       String?
+  vencedor         Boolean  @default(false)
+  criadoEm         DateTime @default(now())
+
+  agrupamento Agrupamento @relation(fields: [agrupamentoId], references: [id], onDelete: Cascade)
+  fornecedor  Fornecedor? @relation(fields: [fornecedorId], references: [id])
+
+  @@index([agrupamentoId])
 }
 
 model EstoqueItem {

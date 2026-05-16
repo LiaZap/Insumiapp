@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AgrupamentosController, AgrupamentosPublicoController } from './agrupamentos.controller';
-import { AgrupamentosService } from './agrupamentos.service';
+import { FornecedoresController } from './fornecedores.controller';
+import { FornecedoresService } from './fornecedores.service';
 import { AuthGuard } from '../common/auth.guard';
 
 @Module({
@@ -15,8 +15,7 @@ import { AuthGuard } from '../common/auth.guard';
       }),
     }),
   ],
-  controllers: [AgrupamentosController, AgrupamentosPublicoController],
-  providers: [AgrupamentosService, AuthGuard],
-  exports: [AgrupamentosService],
+  controllers: [FornecedoresController],
+  providers: [FornecedoresService, AuthGuard],
 })
-export class AgrupamentosModule {}
+export class FornecedoresModule {}

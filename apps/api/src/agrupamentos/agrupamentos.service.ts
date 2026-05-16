@@ -66,6 +66,7 @@ export class AgrupamentosService {
           include: { pedido: { include: { usuario: true } } },
           orderBy: { id: 'asc' },
         },
+        lances: { orderBy: { precoUnitario: 'asc' } },
       },
     });
     if (!a) throw new NotFoundException('Agrupamento não encontrado');
@@ -97,7 +98,160 @@ export class AgrupamentosService {
         quantidade: i.quantidade,
         criadoEm: i.pedido.criadoEm.toISOString(),
       })),
+      lances: a.lances.map((l) => ({
+        id: l.id,
+        agrupamentoId: l.agrupamentoId,
+        fornecedorId: l.fornecedorId,
+        fornecedorNome: l.fornecedorNome,
+        precoUnitario: Number(l.precoUnitario),
+        prazoEntregaDias: l.prazoEntregaDias,
+        observacao: l.observacao,
+        vencedor: l.vencedor,
+        criadoEm: l.criadoEm.toISOString(),
+      })),
     };
+  }
+
+  /** Info pública de um agrupamento — usada na página de lance do fornecedor. */
+  async publico(token: string) {
+    const a = await this.prisma.agrupamento.findUnique({
+      where: { publicToken: token },
+      include: { medicamento: true, itens: { select: { quantidade: true, pedidoId: true } } },
+    });
+    if (!a) throw new NotFoundException('Cotação não encontrada');
+    return {
+      id: a.id,
+      numero: a.numero,
+      status: a.status,
+      aceitandoLances: a.status === 'em_cotacao',
+      medicamento: {
+        nome: a.medicamento.nome,
+        fabricante: a.medicamento.fabricante,
+        apresentacao: a.medicamento.apresentacao,
+        dosagem: a.medicamento.dosagem,
+      },
+      totalPedidos: new Set(a.itens.map((i) => i.pedidoId)).size,
+      totalVolume: a.itens.reduce((s, i) => s + i.quantidade, 0),
+    };
+  }
+
+  /** Fornecedor envia um lance pelo link público. */
+  async criarLancePublico(
+    token: string,
+    dto: { fornecedorNome: string; precoUnitario: number; prazoEntregaDias: number; observacao?: string },
+  ) {
+    const a = await this.prisma.agrupamento.findUnique({ where: { publicToken: token } });
+    if (!a) throw new NotFoundException('Cotação não encontrada');
+    if (a.status !== 'em_cotacao') {
+      throw new BadRequestException('Esta cotação não está aceitando lances');
+    }
+    return this.prisma.lance.create({
+      data: {
+        agrupamentoId: a.id,
+        fornecedorNome: dto.fornecedorNome,
+        precoUnitario: dto.precoUnitario,
+        prazoEntregaDias: dto.prazoEntregaDias,
+        observacao: dto.observacao,
+      },
+    });
+  }
+
+  /** Admin registra um lance manualmente. */
+  async criarLanceAdmin(
+    id: string,
+    dto: {
+      fornecedorNome: string;
+      fornecedorId?: string;
+      precoUnitario: number;
+      prazoEntregaDias: number;
+      observacao?: string;
+    },
+  ) {
+    const a = await this.prisma.agrupamento.findUnique({ where: { id } });
+    if (!a) throw new NotFoundException('Agrupamento não encontrado');
+    if (a.status !== 'em_cotacao') {
+      throw new BadRequestException('Agrupamento não está em cotação');
+    }
+    await this.prisma.lance.create({
+      data: {
+        agrupamentoId: id,
+        fornecedorId: dto.fornecedorId,
+        fornecedorNome: dto.fornecedorNome,
+        precoUnitario: dto.precoUnitario,
+        prazoEntregaDias: dto.prazoEntregaDias,
+        observacao: dto.observacao,
+      },
+    });
+    return this.detalhe(id);
+  }
+
+  /**
+   * Admin escolhe o lance vencedor: propaga o preço para os itens dos pedidos,
+   * recalcula totais e move os pedidos para cotação quando completos.
+   */
+  async escolherVencedor(id: string, lanceId: string) {
+    const a = await this.prisma.agrupamento.findUnique({
+      where: { id },
+      include: { lances: true, itens: true },
+    });
+    if (!a) throw new NotFoundException('Agrupamento não encontrado');
+    const lance = a.lances.find((l) => l.id === lanceId);
+    if (!lance) throw new NotFoundException('Lance não encontrado');
+    if (a.status !== 'em_cotacao') {
+      throw new BadRequestException('Agrupamento não está em cotação');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Marca vencedor
+      await tx.lance.updateMany({ where: { agrupamentoId: id }, data: { vencedor: false } });
+      await tx.lance.update({ where: { id: lanceId }, data: { vencedor: true } });
+      await tx.agrupamento.update({ where: { id }, data: { status: 'cotado' } });
+
+      // Preço do vencedor → itens deste agrupamento
+      await tx.pedidoItem.updateMany({
+        where: { agrupamentoId: id },
+        data: { precoUnitario: lance.precoUnitario },
+      });
+
+      // Recalcula cada pedido afetado; se todos os itens já foram cotados, move p/ "cotado"
+      const pedidoIds = [...new Set(a.itens.map((i) => i.pedidoId))];
+      for (const pedidoId of pedidoIds) {
+        const pedido = await tx.pedido.findUnique({
+          where: { id: pedidoId },
+          include: { itens: { include: { agrupamento: true } } },
+        });
+        if (!pedido) continue;
+        const total = pedido.itens.reduce(
+          (s, it) => s + Number(it.precoUnitario) * it.quantidade,
+          0,
+        );
+        const todosCotados = pedido.itens.every(
+          (it) => it.agrupamento?.status === 'cotado' || it.agrupamento?.status === 'finalizado',
+        );
+        const validaAte = new Date();
+        validaAte.setHours(validaAte.getHours() + 48);
+        await tx.pedido.update({
+          where: { id: pedidoId },
+          data: {
+            total,
+            ...(todosCotados && pedido.status === 'aguardando_cotacao'
+              ? {
+                  status: 'cotado',
+                  cotacaoEnviadaEm: new Date(),
+                  cotacaoValidaAte: validaAte,
+                  prazoEntregaDias: lance.prazoEntregaDias,
+                }
+              : {}),
+          },
+        });
+        await tx.conta.updateMany({
+          where: { pedidoId, tipo: 'pagar' },
+          data: { valor: total },
+        });
+      }
+    });
+
+    return this.detalhe(id);
   }
 
   /** Admin fecha o agrupamento manualmente → entra em cotação. */

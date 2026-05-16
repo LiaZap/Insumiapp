@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { MedicamentosModule } from './medicamentos/medicamentos.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { AgrupamentosModule } from './agrupamentos/agrupamentos.module';
+import { FornecedoresModule } from './fornecedores/fornecedores.module';
 import { EstoqueModule } from './estoque/estoque.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 
@@ -19,6 +20,7 @@ import { FinanceiroModule } from './financeiro/financeiro.module';
     MedicamentosModule,
     PedidosModule,
     AgrupamentosModule,
+    FornecedoresModule,
     EstoqueModule,
     FinanceiroModule,
   ],
