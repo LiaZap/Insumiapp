@@ -24,7 +24,7 @@ export function EstoqueHeroCard({ totalValor, totalProdutos }: Props) {
           Estoque <Text className="font-semibold">Insumia®</Text>
         </Text>
         <Pressable
-          onPress={() => router.push('/(app)/movimentacoes' as never)}
+          onPress={() => router.push('/movimentacoes')}
           className="h-11 w-11 items-center justify-center rounded-icon bg-brand-700 active:opacity-80"
         >
           <SolarIcon name="transfer-vertical-linear" size={20} color="#fff" />

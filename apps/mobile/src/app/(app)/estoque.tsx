@@ -51,7 +51,7 @@ export default function EstoqueScreen() {
         <View className="h-10 w-10" />
         <Text className="font-semibold text-base text-[#515151]">Estoque</Text>
         <Pressable
-          onPress={() => router.push('/(app)/movimentacoes' as never)}
+          onPress={() => router.push('/movimentacoes')}
           className="h-10 w-10 items-center justify-center rounded-[15px] bg-black/5 active:opacity-70"
         >
           <SolarIcon name="transfer-vertical-linear" size={18} color="#515151" />

@@ -145,7 +145,7 @@ export default function NotificacoesScreen() {
               <Row
                 n={item}
                 onPress={() =>
-                  item.pedidoId ? router.push(`/(app)/pedido/${item.pedidoId}` as never) : undefined
+                  item.pedidoId ? router.push(`/pedido/${item.pedidoId}`) : undefined
                 }
               />
             </View>

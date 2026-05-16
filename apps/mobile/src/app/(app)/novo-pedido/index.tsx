@@ -89,7 +89,7 @@ export default function BuscaScreen() {
 
       {totalItens > 0 ? (
         <View className="absolute bottom-28 self-center">
-          <PillCTA label={`Ver Pedido • ${totalItens}`} onPress={() => router.push('/(app)/novo-pedido/carrinho')} />
+          <PillCTA label={`Ver Pedido • ${totalItens}`} onPress={() => router.push('/novo-pedido/carrinho')} />
         </View>
       ) : null}
     </SafeAreaView>

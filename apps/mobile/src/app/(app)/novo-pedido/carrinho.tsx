@@ -30,7 +30,7 @@ export default function CarrinhoScreen() {
         })),
       },
       {
-        onSuccess: () => router.replace('/(app)/novo-pedido/confirmacao'),
+        onSuccess: () => router.replace('/novo-pedido/confirmacao'),
         onError: (err) =>
           Alert.alert('Erro', (err as Error).message ?? 'Não foi possível enviar o pedido'),
       },

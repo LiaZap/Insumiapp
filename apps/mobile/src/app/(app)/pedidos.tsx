@@ -62,7 +62,7 @@ export default function PedidosScreen() {
         <View className="h-10 w-10" />
         <Text className="font-semibold text-base text-[#515151]">Pedidos</Text>
         <Pressable
-          onPress={() => router.push('/(app)/notificacoes' as never)}
+          onPress={() => router.push('/notificacoes')}
           className="h-10 w-10 items-center justify-center rounded-[15px] bg-black/5 active:opacity-70"
         >
           <SolarIcon name="bell-linear" size={18} color="#515151" />
@@ -146,7 +146,7 @@ export default function PedidosScreen() {
           title="Nenhum pedido por aqui"
           description="Crie seu primeiro pedido tocando no + no menu inferior."
           actionLabel="Novo Pedido"
-          onAction={() => router.push('/(app)/novo-pedido' as never)}
+          onAction={() => router.navigate('/novo-pedido')}
         />
       ) : (
         <FlatList
@@ -157,7 +157,7 @@ export default function PedidosScreen() {
               <PedidoCard
                 pedido={featured}
                 variant="featured"
-                onPress={() => router.push(`/(app)/pedido/${featured.id}` as never)}
+                onPress={() => router.push(`/pedido/${featured.id}`)}
               />
               {rest.length > 0 ? (
                 <Text className="mt-6 mb-1 text-xs font-medium text-ink-500">
@@ -170,7 +170,7 @@ export default function PedidosScreen() {
             <View className="px-5">
               <PedidoCard
                 pedido={item}
-                onPress={() => router.push(`/(app)/pedido/${item.id}` as never)}
+                onPress={() => router.push(`/pedido/${item.id}`)}
               />
               <View style={{ height: 1, backgroundColor: '#E0E0E0' }} />
             </View>

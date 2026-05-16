@@ -40,7 +40,7 @@ export default function Dashboard() {
           </View>
           <View className="flex-row items-center gap-2">
             <Pressable
-              onPress={() => router.push('/(app)/notificacoes' as never)}
+              onPress={() => router.push('/notificacoes')}
               className="h-12 w-12 items-center justify-center rounded-pill bg-white/60 active:opacity-80"
             >
               <SolarIcon name="bell-linear" size={20} color={colors.brand[500]} />
@@ -77,18 +77,18 @@ export default function Dashboard() {
               icon="add-square-bold-duotone"
               label="Solicitar"
               filled
-              onPress={() => router.push('/(app)/novo-pedido')}
+              onPress={() => router.navigate('/novo-pedido')}
             />
             <QuickIconAction
               icon="file-check-bold-duotone"
               label="Aprovar"
               badge={3}
-              onPress={() => router.navigate('/(app)/pedidos')}
+              onPress={() => router.navigate('/pedidos')}
             />
             <QuickIconAction
               icon="box-bold-duotone"
               label="Acompanhar"
-              onPress={() => router.navigate('/(app)/pedidos')}
+              onPress={() => router.navigate('/pedidos')}
             />
           </View>
         </View>

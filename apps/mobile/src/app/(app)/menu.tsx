@@ -1,4 +1,4 @@
-import { Pressable, Text, View, ScrollView } from 'react-native';
+import { Alert, Pressable, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -39,8 +39,11 @@ export default function MenuScreen() {
 
   const handleLogout = async () => {
     await clearSession();
-    router.replace('/(auth)/login');
+    router.replace('/login');
   };
+
+  const emBreve = (titulo: string) =>
+    Alert.alert(titulo, 'Esta seção estará disponível em breve.');
 
   return (
     <SafeAreaView className="flex-1 bg-surface-base" edges={['top']}>
@@ -53,11 +56,12 @@ export default function MenuScreen() {
         ) : null}
 
         <View className="mt-6 gap-3">
-          <MenuItem icon="chat-round-money-bold" label="Financeiro" onPress={() => router.push('/(app)/financeiro')} />
-          <MenuItem icon="map-point-bold" label="Endereços" onPress={() => {}} />
-          <MenuItem icon="user-bold" label="Perfil & Usuários" onPress={() => {}} />
-          <MenuItem icon="bell-linear" label="Notificações" onPress={() => {}} />
-          <MenuItem icon="file-check-bold-duotone" label="Ajuda" onPress={() => {}} />
+          <MenuItem icon="chat-round-money-bold" label="Financeiro" onPress={() => router.push('/financeiro')} />
+          <MenuItem icon="bell-linear" label="Notificações" onPress={() => router.push('/notificacoes')} />
+          <MenuItem icon="box-bold-duotone" label="Movimentações" onPress={() => router.push('/movimentacoes')} />
+          <MenuItem icon="map-point-bold" label="Endereços" onPress={() => emBreve('Endereços')} />
+          <MenuItem icon="user-bold" label="Perfil & Usuários" onPress={() => emBreve('Perfil & Usuários')} />
+          <MenuItem icon="file-check-bold-duotone" label="Ajuda" onPress={() => emBreve('Ajuda')} />
         </View>
 
         <View className="mt-8">

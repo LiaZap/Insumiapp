@@ -48,13 +48,13 @@ export default function ConfirmacaoScreen() {
 
       <View className="px-6 pb-10 gap-3">
         <Pressable
-          onPress={() => router.replace('/(app)/pedidos')}
+          onPress={() => router.replace('/pedidos')}
           className="h-14 items-center justify-center rounded-pill bg-white active:opacity-80"
         >
           <Text className="font-semibold text-brand-500">Ver Meus Pedidos</Text>
         </Pressable>
         <Pressable
-          onPress={() => router.replace('/(app)/dashboard')}
+          onPress={() => router.replace('/dashboard')}
           className="h-12 items-center justify-center active:opacity-60"
         >
           <Text className="font-medium text-sm text-white/75">Voltar ao Início</Text>
