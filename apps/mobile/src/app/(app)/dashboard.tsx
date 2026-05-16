@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { SolarIcon } from '@/components/icons/SolarIcon';
+import { useAuthStore } from '@/features/auth/auth.store';
 import { colors } from '@/theme/tokens';
 
 const USAGE_DATA = [
@@ -21,6 +22,17 @@ export default function Dashboard() {
   const router = useRouter();
   const highlightIndex = useMemo(() => 24, []); // barra cyan no Figma
 
+  const user = useAuthStore((s) => s.user);
+  const nomeExibido = user?.empresa ?? user?.nome ?? 'Minha Clínica';
+  const primeiroNome = user?.nome?.split(' ').filter(Boolean).slice(0, 2).join(' ') ?? '';
+  const iniciais =
+    nomeExibido
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('') || 'IN';
+
   return (
     <SafeAreaView className="flex-1 bg-surface-base" edges={['top']}>
       <ScrollView
@@ -31,11 +43,13 @@ export default function Dashboard() {
         <View className="flex-row items-center justify-between px-5 pt-2">
           <View className="flex-row items-center gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-2xl bg-brand-800">
-              <Text className="font-bold text-white">LP</Text>
+              <Text className="font-bold text-white">{iniciais}</Text>
             </View>
             <View>
-              <Text className="font-sans text-xs text-ink-500">Clinica Pro</Text>
-              <Text className="font-semibold text-sm text-brand-700">LifeMed Pinheiros</Text>
+              <Text className="font-sans text-xs text-ink-500">
+                {primeiroNome ? `Olá, ${primeiroNome}` : 'Bem-vindo(a)'}
+              </Text>
+              <Text className="font-semibold text-sm text-brand-700">{nomeExibido}</Text>
             </View>
           </View>
           <View className="flex-row items-center gap-2">
