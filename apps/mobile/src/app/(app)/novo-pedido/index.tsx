@@ -81,14 +81,14 @@ export default function BuscaScreen() {
                 </Text>
               </View>
             }
-            contentContainerStyle={{ paddingBottom: 160 }}
+            contentContainerStyle={{ paddingBottom: 220 }}
             showsVerticalScrollIndicator={false}
           />
         )}
       </View>
 
       {totalItens > 0 ? (
-        <View className="absolute bottom-6 self-center">
+        <View className="absolute bottom-28 self-center">
           <PillCTA label={`Ver Pedido • ${totalItens}`} onPress={() => router.push('/(app)/novo-pedido/carrinho')} />
         </View>
       ) : null}

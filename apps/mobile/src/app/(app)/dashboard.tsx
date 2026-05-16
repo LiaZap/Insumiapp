@@ -83,12 +83,12 @@ export default function Dashboard() {
               icon="file-check-bold-duotone"
               label="Aprovar"
               badge={3}
-              onPress={() => router.push('/(app)/pedidos')}
+              onPress={() => router.navigate('/(app)/pedidos')}
             />
             <QuickIconAction
               icon="box-bold-duotone"
               label="Acompanhar"
-              onPress={() => router.push('/(app)/pedidos')}
+              onPress={() => router.navigate('/(app)/pedidos')}
             />
           </View>
         </View>
