@@ -2,14 +2,12 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import type { PedidoStatus } from '@insumia/shared';
 import { SolarIcon } from '@/components/icons/SolarIcon';
 import { useAuthStore } from '@/features/auth/auth.store';
+import { useEstoque, useMovimentacoes } from '@/features/estoque/estoque.hooks';
+import { usePedidos } from '@/features/pedidos/pedidos.hooks';
 import { colors } from '@/theme/tokens';
-
-const USAGE_DATA = [
-  94, 73, 63, 68, 73, 68, 80, 88, 88, 80, 80, 73, 63, 56, 63, 76, 76, 83, 94, 97, 97, 97, 97, 103,
-  41, 97, 103, 97, 107, 107,
-];
 
 const QUICK_ACTIONS = [
   { label: 'Endereço Comercial', icon: 'map-point-bold' as const },
@@ -18,9 +16,23 @@ const QUICK_ACTIONS = [
   { label: 'Nossa Proposta', icon: 'file-check-bold-duotone' as const },
 ];
 
+const STATUS_FRASE: Record<PedidoStatus, string> = {
+  rascunho: 'Rascunho — finalize para enviar.',
+  aguardando_cotacao: 'Aguardando cotação da equipe Insumia®.',
+  cotado: 'Cotação recebida — revise e aprove.',
+  confirmado: 'Pedido aprovado, em preparação.',
+  em_separacao: 'Pedido em separação.',
+  enviado: 'Pedido enviado, a caminho da clínica.',
+  entregue: 'Pedido entregue.',
+  cancelado: 'Pedido cancelado.',
+};
+
+function formatMoney(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+}
+
 export default function Dashboard() {
   const router = useRouter();
-  const highlightIndex = useMemo(() => 24, []); // barra cyan no Figma
 
   const user = useAuthStore((s) => s.user);
   const nomeExibido = user?.empresa ?? user?.nome ?? 'Minha Clínica';
@@ -32,6 +44,53 @@ export default function Dashboard() {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? '')
       .join('') || 'IN';
+
+  const { data: estoque } = useEstoque();
+  const { data: pedidos } = usePedidos();
+  const { data: movimentacoes } = useMovimentacoes();
+
+  // Estoque da clínica — valor total, nº de produtos e alertas de validade
+  const { totalValor, totalProdutos, alertas } = useMemo(() => {
+    const itens = estoque ?? [];
+    return {
+      totalValor: itens.reduce(
+        (s, i) => s + i.quantidade * Number(i.medicamento.precoUnitario ?? 0),
+        0,
+      ),
+      totalProdutos: itens.length,
+      alertas: itens.filter((i) => i.validadeStatus !== 'ok').length,
+    };
+  }, [estoque]);
+
+  const ultimoPedido = (pedidos ?? [])[0];
+  const aprovarCount = (pedidos ?? []).filter((p) => p.status === 'cotado').length;
+
+  // Frequência de movimentações nos últimos 30 dias
+  const { barras, highlightIndex } = useMemo(() => {
+    const dias = 30;
+    const counts = new Array<number>(dias).fill(0);
+    const agora = Date.now();
+    for (const m of movimentacoes ?? []) {
+      const diff = Math.floor((agora - new Date(m.criadoEm).getTime()) / 86_400_000);
+      if (diff >= 0 && diff < dias) {
+        const idx = dias - 1 - diff;
+        counts[idx] = (counts[idx] ?? 0) + 1;
+      }
+    }
+    const max = Math.max(1, ...counts);
+    let hi = 0;
+    let hiVal = -1;
+    counts.forEach((c, i) => {
+      if (c > hiVal) {
+        hiVal = c;
+        hi = i;
+      }
+    });
+    return {
+      barras: counts.map((c) => 8 + (c / max) * 99),
+      highlightIndex: hi,
+    };
+  }, [movimentacoes]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-base" edges={['top']}>
@@ -67,23 +126,31 @@ export default function Dashboard() {
         <View className="mt-6 mx-5 rounded-card bg-white/70 px-5 pt-6 pb-5">
           <View className="flex-row items-start justify-between">
             <Text className="font-medium text-sm text-brand-500">
-              Estoque <Text className="font-semibold">Insumia®</Text>
+              Meu <Text className="font-semibold">Estoque</Text>
             </Text>
-            <View className="h-9 flex-row items-center gap-2 rounded-pill bg-white px-3">
+            <Pressable
+              onPress={() => router.navigate('/estoque')}
+              className="h-9 flex-row items-center gap-2 rounded-pill bg-white px-3 active:opacity-80"
+            >
               <Text className="font-semibold text-xs text-brand-800/75">Alertas</Text>
-              <View className="h-4 w-4 items-center justify-center rounded-full bg-danger">
-                <Text className="font-sora text-[9px] text-white">3</Text>
+              <View
+                className="h-4 min-w-4 items-center justify-center rounded-full px-1"
+                style={{ backgroundColor: alertas > 0 ? colors.danger : '#9AA3B2' }}
+              >
+                <Text className="font-sora text-[9px] text-white">{alertas}</Text>
               </View>
-            </View>
+            </Pressable>
           </View>
 
           <Text
             className="mt-4 font-medium text-[32px] text-brand-500"
             style={{ letterSpacing: -0.5 }}
           >
-            R$1.300.394,93
+            {formatMoney(totalValor)}
           </Text>
-          <Text className="mt-2 text-sm text-ink-700">104 Produtos em estoque</Text>
+          <Text className="mt-2 text-sm text-ink-700">
+            {totalProdutos} {totalProdutos === 1 ? 'produto' : 'produtos'} em estoque
+          </Text>
 
           {/* Quick actions row */}
           <View className="mt-5 flex-row gap-6">
@@ -96,7 +163,7 @@ export default function Dashboard() {
             <QuickIconAction
               icon="file-check-bold-duotone"
               label="Aprovar"
-              badge={3}
+              badge={aprovarCount || undefined}
               onPress={() => router.navigate('/pedidos')}
             />
             <QuickIconAction
@@ -108,23 +175,36 @@ export default function Dashboard() {
         </View>
 
         {/* Order status card */}
-        <View className="mt-3 mx-5 rounded-card bg-brand-800 px-5 py-5">
+        <Pressable
+          onPress={() =>
+            ultimoPedido
+              ? router.push(`/pedido/${ultimoPedido.id}`)
+              : router.navigate('/novo-pedido')
+          }
+          className="mt-3 mx-5 rounded-card bg-brand-800 px-5 py-5 active:opacity-90"
+        >
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="font-semibold text-sm text-white">Último Pedido #123456</Text>
-              <Text className="mt-1 text-xs text-white/50">Confira o status do seu pedido</Text>
+              <Text className="font-semibold text-sm text-white">
+                {ultimoPedido ? `Último Pedido ${ultimoPedido.numero}` : 'Nenhum pedido ainda'}
+              </Text>
+              <Text className="mt-1 text-xs text-white/50">
+                {ultimoPedido ? 'Confira o status do seu pedido' : 'Faça seu primeiro pedido'}
+              </Text>
             </View>
             <View className="h-9 w-9 items-center justify-center rounded-full bg-white/10">
               <SolarIcon name="clock-circle-linear" size={16} color="#fff" />
             </View>
           </View>
           <Text className="mt-4 text-xs leading-5 text-white/75">
-            Pedido Aprovado aguardando liberação pela Insumia®
+            {ultimoPedido
+              ? STATUS_FRASE[ultimoPedido.status]
+              : 'Toque aqui para solicitar insumos à Insumia®.'}
           </Text>
-          <Pressable className="absolute right-4 bottom-4 h-9 w-9 items-center justify-center rounded-2xl bg-black/30 active:opacity-80">
+          <View className="absolute right-4 bottom-4 h-9 w-9 items-center justify-center rounded-2xl bg-black/30">
             <SolarIcon name="arrow-right-up-linear" size={16} color="#fff" />
-          </Pressable>
-        </View>
+          </View>
+        </Pressable>
 
         {/* Cards grid (horizontal scroll) */}
         <ScrollView
@@ -153,23 +233,27 @@ export default function Dashboard() {
             <View>
               <Text className="font-medium text-base text-white">Frequência de Uso</Text>
               <Text className="mt-1 text-xs text-white/25">
-                Movimentações por dia em <Text className="text-white">Janeiro</Text>
+                Movimentações nos <Text className="text-white">últimos 30 dias</Text>
               </Text>
             </View>
-            <Pressable className="h-10 w-10 items-center justify-center rounded-icon bg-brand-700 active:opacity-80">
+            <Pressable
+              onPress={() => router.push('/movimentacoes')}
+              className="h-10 w-10 items-center justify-center rounded-icon bg-brand-700 active:opacity-80"
+            >
               <SolarIcon name="transfer-vertical-linear" size={18} color="#fff" />
             </Pressable>
           </View>
 
           <View className="mt-6 h-[110px] flex-row items-end justify-between">
-            {USAGE_DATA.map((h, i) => (
+            {barras.map((h, i) => (
               <View
                 key={i}
                 style={{
                   width: 4,
                   height: h,
                   borderRadius: 31,
-                  backgroundColor: i === highlightIndex ? colors.accent[400] : 'rgba(255,255,255,0.26)',
+                  backgroundColor:
+                    i === highlightIndex ? colors.accent[400] : 'rgba(255,255,255,0.26)',
                 }}
               />
             ))}

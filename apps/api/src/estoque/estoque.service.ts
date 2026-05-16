@@ -15,9 +15,10 @@ const MS_DIA = 86_400_000;
 export class EstoqueService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listarResumo(): Promise<EstoqueResumo[]> {
-    // Agrega EstoqueItem por medicamentoId (somando lotes)
+  async listarResumo(usuarioId: string): Promise<EstoqueResumo[]> {
+    // Agrega EstoqueItem por medicamentoId (somando lotes) — só da clínica logada
     const items = await this.prisma.estoqueItem.findMany({
+      where: { usuarioId },
       include: { medicamento: true },
     });
 
@@ -73,8 +74,9 @@ export class EstoqueService {
     );
   }
 
-  async listarMovimentacoes() {
+  async listarMovimentacoes(usuarioId: string) {
     return this.prisma.movimentacao.findMany({
+      where: { usuarioId },
       orderBy: { criadoEm: 'desc' },
       include: {
         medicamento: true,
@@ -94,6 +96,7 @@ export class EstoqueService {
       // Localiza ou cria EstoqueItem (procurando por lote NULL quando dto não traz)
       let item = await tx.estoqueItem.findFirst({
         where: {
+          usuarioId,
           medicamentoId: dto.medicamentoId,
           lote: dto.lote ?? null,
         },
@@ -110,6 +113,7 @@ export class EstoqueService {
       if (!item) {
         item = await tx.estoqueItem.create({
           data: {
+            usuarioId,
             medicamentoId: dto.medicamentoId,
             lote: dto.lote ?? null,
             validade: dto.validade ? new Date(dto.validade) : null,

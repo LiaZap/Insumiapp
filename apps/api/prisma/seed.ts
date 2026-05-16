@@ -86,30 +86,10 @@ async function main() {
     }
   }
 
-  // Seed inicial de estoque (apenas pra produtos que ainda não têm)
-  const meds = await prisma.medicamento.findMany();
-  for (const med of meds) {
-    const has = await prisma.estoqueItem.findFirst({
-      where: { medicamentoId: med.id },
-    });
-    if (!has) {
-      // Quantidades variando — alguns com estoque baixo p/ visualizar status
-      const qty =
-        med.nome === 'Radiesse' ? 3 : med.nome === 'Ellansé' ? 8 : 50 + Math.floor(Math.random() * 950);
-      await prisma.estoqueItem.create({
-        data: {
-          medicamentoId: med.id,
-          quantidade: qty,
-          localizacao: 'Almoxarifado A',
-        },
-      });
-    }
-  }
-
   // Conta admin do cliente (Valério) — login do back-office.
   // upsert garante que o nome seja atualizado mesmo se a conta já existir.
   const senhaHash = await bcrypt.hash('demo12345', 10);
-  await prisma.user.upsert({
+  const valerio = await prisma.user.upsert({
     where: { email: 'valerio@insumia.app' },
     update: { nome: 'Valério', empresa: 'Insumia', role: 'admin' },
     create: {
@@ -137,6 +117,60 @@ async function main() {
         },
       }));
     clientes.push({ id: user.id });
+  }
+
+  // Estoque + movimentações POR CLÍNICA — cada uma tem o seu próprio estoque.
+  const usuariosComEstoque = [valerio.id, ...clientes.map((c) => c.id)];
+  const estoqueExistente = await prisma.estoqueItem.count();
+  if (estoqueExistente === 0) {
+    const meds = await prisma.medicamento.findMany();
+    for (const usuarioId of usuariosComEstoque) {
+      for (const med of meds) {
+        // ~80% dos medicamentos presentes no estoque de cada clínica
+        if (Math.random() < 0.2) continue;
+        // Alguns itens baixos/esgotados p/ visualizar status
+        const qty =
+          Math.random() < 0.15
+            ? Math.floor(Math.random() * 9)
+            : 12 + Math.floor(Math.random() * 180);
+
+        // Validade variada (FEFO — alimenta o alerta de vencimento)
+        const r = Math.random();
+        const validade = new Date();
+        if (r < 0.12) validade.setDate(validade.getDate() - Math.floor(10 + Math.random() * 60));
+        else if (r < 0.35) validade.setDate(validade.getDate() + Math.floor(5 + Math.random() * 55));
+        else validade.setDate(validade.getDate() + Math.floor(120 + Math.random() * 600));
+
+        await prisma.estoqueItem.create({
+          data: {
+            usuarioId,
+            medicamentoId: med.id,
+            quantidade: qty,
+            validade,
+            lote: `LT-${Math.floor(100000 + Math.random() * 900000)}`,
+            localizacao: 'Almoxarifado',
+          },
+        });
+      }
+
+      // Histórico de movimentações (últimos 30 dias) — alimenta o gráfico
+      const nMov = 20 + Math.floor(Math.random() * 25);
+      for (let i = 0; i < nMov; i++) {
+        const med = pick(meds);
+        const criadoEm = new Date();
+        criadoEm.setDate(criadoEm.getDate() - Math.floor(Math.random() * 30));
+        criadoEm.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60));
+        await prisma.movimentacao.create({
+          data: {
+            medicamentoId: med.id,
+            usuarioId,
+            tipo: Math.random() < 0.7 ? 'saida' : 'entrada',
+            quantidade: 1 + Math.floor(Math.random() * 5),
+            criadoEm,
+          },
+        });
+      }
+    }
   }
 
   // Pedidos históricos — regenera dataset de demo se houver poucos pedidos
@@ -194,20 +228,6 @@ async function main() {
         },
       });
     }
-  }
-
-  // Backfill de validade nos itens de estoque (FEFO — alerta de vencimento)
-  const itensSemValidade = await prisma.estoqueItem.findMany({ where: { validade: null } });
-  for (const item of itensSemValidade) {
-    const r = Math.random();
-    const d = new Date();
-    if (r < 0.12) d.setDate(d.getDate() - Math.floor(10 + Math.random() * 60)); // vencido
-    else if (r < 0.35) d.setDate(d.getDate() + Math.floor(5 + Math.random() * 55)); // vence logo
-    else d.setDate(d.getDate() + Math.floor(120 + Math.random() * 600)); // ok
-    await prisma.estoqueItem.update({
-      where: { id: item.id },
-      data: { validade: d, lote: `LT-${Math.floor(100000 + Math.random() * 900000)}` },
-    });
   }
 
   // Fornecedores de exemplo

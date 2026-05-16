@@ -65,6 +65,7 @@ model User {
 
   pedidos       Pedido[]
   movimentacoes Movimentacao[]
+  estoqueItens  EstoqueItem[]
 }
 
 model Medicamento {
@@ -198,6 +199,7 @@ model Lance {
 model EstoqueItem {
   id            String    @id @default(uuid())
   medicamentoId String
+  usuarioId     String
   quantidade    Int       @default(0)
   lote          String?
   validade      DateTime?
@@ -205,8 +207,9 @@ model EstoqueItem {
   atualizadoEm  DateTime  @updatedAt
 
   medicamento Medicamento @relation(fields: [medicamentoId], references: [id])
+  usuario     User        @relation(fields: [usuarioId], references: [id])
 
-  @@unique([medicamentoId, lote])
+  @@unique([usuarioId, medicamentoId, lote])
 }
 
 model Movimentacao {

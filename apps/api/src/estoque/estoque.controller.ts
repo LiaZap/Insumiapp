@@ -13,13 +13,13 @@ export class EstoqueController {
   constructor(private readonly estoque: EstoqueService) {}
 
   @Get()
-  listResumo() {
-    return this.estoque.listarResumo();
+  listResumo(@Req() req: AuthRequest) {
+    return this.estoque.listarResumo(req.user.id);
   }
 
   @Get('movimentacoes')
-  listMovimentacoes() {
-    return this.estoque.listarMovimentacoes();
+  listMovimentacoes(@Req() req: AuthRequest) {
+    return this.estoque.listarMovimentacoes(req.user.id);
   }
 
   @Post('movimentacoes')
