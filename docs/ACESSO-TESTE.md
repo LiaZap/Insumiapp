@@ -67,7 +67,7 @@ O back-office é onde a equipe Insumia vê e gerencia os pedidos.
 
 - **Endereço:** https://insumiaapp.bahflash.tech
 - **Login do admin (Valério):**
-  - E-mail: `demo@insumia.app`
+  - E-mail: `valerio@insumia.app`
   - Senha: `demo12345`
 
 ---
@@ -77,7 +77,7 @@ O back-office é onde a equipe Insumia vê e gerencia os pedidos.
 1. **No celular** — entre numa clínica (ex: Clínica Viva) e faça um pedido
    seguindo o passo 3.
 2. **No navegador** — acesse https://insumiaapp.bahflash.tech e faça login
-   como **Valério** (`demo@insumia.app` / `demo12345`).
+   como **Valério** (`valerio@insumia.app` / `demo12345`).
 3. Vá até a página **Pedidos**.
 4. O pedido que você acabou de fazer no app aparece na lista, com o nome
    da clínica que o enviou.
@@ -92,4 +92,4 @@ montar a cotação — o ciclo de compra coletiva da Insumia.
 | O quê | Endereço | Login | Senha |
 |-------|----------|-------|-------|
 | App da clínica | exp://sistemas-metro.cusrzj.easypanel.host | (clínicas da tabela) | demo12345 |
-| Back-office | https://insumiaapp.bahflash.tech | demo@insumia.app | demo12345 |
+| Back-office | https://insumiaapp.bahflash.tech | valerio@insumia.app | demo12345 |

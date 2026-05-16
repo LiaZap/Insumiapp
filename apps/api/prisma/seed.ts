@@ -110,11 +110,11 @@ async function main() {
   // upsert garante que o nome seja atualizado mesmo se a conta já existir.
   const senhaHash = await bcrypt.hash('demo12345', 10);
   await prisma.user.upsert({
-    where: { email: 'demo@insumia.app' },
+    where: { email: 'valerio@insumia.app' },
     update: { nome: 'Valério', empresa: 'Insumia', role: 'admin' },
     create: {
       nome: 'Valério',
-      email: 'demo@insumia.app',
+      email: 'valerio@insumia.app',
       empresa: 'Insumia',
       passwordHash: senhaHash,
       role: 'admin',
