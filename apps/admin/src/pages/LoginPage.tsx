@@ -39,8 +39,8 @@ const HIGHLIGHTS = [
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('demo@insumia.app');
-  const [password, setPassword] = useState('demo12345');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,17 +193,6 @@ export function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-7 flex items-center gap-3 rounded-xl bg-surface-base px-4 py-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-xs font-bold text-brand-600">
-              D
-            </div>
-            <div className="text-[12px] leading-tight text-ink-500">
-              <span className="font-semibold text-ink-700">Conta de demonstração</span>
-              <br />
-              demo@insumia.app · demo12345
-            </div>
-          </div>
         </div>
       </div>
     </div>
