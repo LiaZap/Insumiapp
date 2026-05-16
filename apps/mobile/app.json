@@ -46,7 +46,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.1.9:3333"
+      "apiUrl": "https://sistemas-api.cusrzj.easypanel.host"
     }
   }
 }
