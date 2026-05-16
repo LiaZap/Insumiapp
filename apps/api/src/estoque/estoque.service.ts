@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import type { CriarMovimentacaoInput, EstoqueResumo, EstoqueStatus } from '@insumia/shared';
+import {
+  DIAS_ALERTA_VALIDADE,
+  type CriarMovimentacaoInput,
+  type EstoqueResumo,
+  type EstoqueStatus,
+  type ValidadeStatus,
+} from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 const TIPOS_SAIDA = new Set(['saida', 'perda', 'transferencia']);
+const MS_DIA = 86_400_000;
 
 @Injectable()
 export class EstoqueService {
@@ -14,13 +21,32 @@ export class EstoqueService {
       include: { medicamento: true },
     });
 
+    // lote mais próximo de vencer por medicamento (FEFO)
+    const proxValidade = new Map<string, { validade: Date; lote: string | null }>();
+    for (const item of items) {
+      if (!item.validade) continue;
+      const cur = proxValidade.get(item.medicamentoId);
+      if (!cur || item.validade < cur.validade) {
+        proxValidade.set(item.medicamentoId, { validade: item.validade, lote: item.lote });
+      }
+    }
+
     const byMed = new Map<string, EstoqueResumo>();
     for (const item of items) {
       const cur = byMed.get(item.medicamentoId);
       const med = item.medicamento;
       const qty = cur ? cur.quantidade + item.quantidade : item.quantidade;
-      const status: EstoqueStatus =
-        qty <= 0 ? 'esgotado' : qty < 10 ? 'baixo' : 'ok';
+      const status: EstoqueStatus = qty <= 0 ? 'esgotado' : qty < 10 ? 'baixo' : 'ok';
+
+      const prox = proxValidade.get(item.medicamentoId);
+      let validadeStatus: ValidadeStatus = 'ok';
+      let diasParaVencer: number | null = null;
+      if (prox) {
+        diasParaVencer = Math.floor((prox.validade.getTime() - Date.now()) / MS_DIA);
+        validadeStatus =
+          diasParaVencer < 0 ? 'vencido' : diasParaVencer <= DIAS_ALERTA_VALIDADE ? 'proximo' : 'ok';
+      }
+
       byMed.set(item.medicamentoId, {
         medicamento: {
           id: med.id,
@@ -36,6 +62,10 @@ export class EstoqueService {
         quantidade: qty,
         status,
         atualizadoEm: cur?.atualizadoEm ?? item.atualizadoEm.toISOString(),
+        proximaValidade: prox?.validade.toISOString() ?? null,
+        lote: prox?.lote ?? null,
+        validadeStatus,
+        diasParaVencer,
       });
     }
     return Array.from(byMed.values()).sort((a, b) =>

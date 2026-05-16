@@ -21,6 +21,13 @@ export const MOVIMENTACAO_TIPO_LABEL: Record<MovimentacaoTipo, string> = {
 export const estoqueStatusSchema = z.enum(['ok', 'baixo', 'esgotado']);
 export type EstoqueStatus = z.infer<typeof estoqueStatusSchema>;
 
+// Status de validade (FEFO): vencido, vence em ≤60 dias, ou ok
+export const validadeStatusSchema = z.enum(['vencido', 'proximo', 'ok']);
+export type ValidadeStatus = z.infer<typeof validadeStatusSchema>;
+
+// Janela de alerta de vencimento (dias)
+export const DIAS_ALERTA_VALIDADE = 60;
+
 // Resumo retornado pelo GET /estoque — uma linha por medicamento (agregada)
 export const estoqueResumoSchema = z.object({
   medicamento: medicamentoSchema.partial().extend({
@@ -30,6 +37,11 @@ export const estoqueResumoSchema = z.object({
   quantidade: z.number().int(),
   status: estoqueStatusSchema,
   atualizadoEm: z.string().nullable(),
+  // Validade do lote mais próximo de vencer (FEFO)
+  proximaValidade: z.string().nullable(),
+  lote: z.string().nullable(),
+  validadeStatus: validadeStatusSchema,
+  diasParaVencer: z.number().nullable(),
 });
 export type EstoqueResumo = z.infer<typeof estoqueResumoSchema>;
 

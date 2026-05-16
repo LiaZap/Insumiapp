@@ -45,9 +45,22 @@ export function StockRow({ item, onPress, dashed = true }: StockRowProps) {
             {med.nome}
             {subtitleParts.length > 0 ? ` • ${subtitleParts.join(' • ')}` : ''}
           </Text>
-          <Text numberOfLines={1} className="mt-1 text-xs text-[#969696]">
-            {med.fabricante ?? med.principioAtivo ?? ''}
-          </Text>
+          <View className="mt-1 flex-row items-center gap-1.5">
+            <Text numberOfLines={1} className="text-xs text-[#969696]">
+              {med.fabricante ?? med.principioAtivo ?? ''}
+            </Text>
+            {item.validadeStatus === 'vencido' ? (
+              <View className="rounded-full bg-danger/10 px-1.5 py-0.5">
+                <Text className="text-[9px] font-semibold text-danger">Vencido</Text>
+              </View>
+            ) : item.validadeStatus === 'proximo' ? (
+              <View className="rounded-full bg-warning/15 px-1.5 py-0.5">
+                <Text className="text-[9px] font-semibold text-warning">
+                  Vence em {item.diasParaVencer}d
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
 

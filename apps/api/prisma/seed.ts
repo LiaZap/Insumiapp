@@ -182,6 +182,20 @@ async function main() {
     }
   }
 
+  // Backfill de validade nos itens de estoque (FEFO — alerta de vencimento)
+  const itensSemValidade = await prisma.estoqueItem.findMany({ where: { validade: null } });
+  for (const item of itensSemValidade) {
+    const r = Math.random();
+    const d = new Date();
+    if (r < 0.12) d.setDate(d.getDate() - Math.floor(10 + Math.random() * 60)); // vencido
+    else if (r < 0.35) d.setDate(d.getDate() + Math.floor(5 + Math.random() * 55)); // vence logo
+    else d.setDate(d.getDate() + Math.floor(120 + Math.random() * 600)); // ok
+    await prisma.estoqueItem.update({
+      where: { id: item.id },
+      data: { validade: d, lote: `LT-${Math.floor(100000 + Math.random() * 900000)}` },
+    });
+  }
+
   // Fornecedores de exemplo
   const fornecedoresSeed = [
     { nome: 'Distribuidora Alfa Med', cnpj: '12.345.678/0001-90', email: 'comercial@alfamed.com.br' },

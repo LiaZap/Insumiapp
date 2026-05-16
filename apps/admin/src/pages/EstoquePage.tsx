@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CATEGORIA_LABEL, type EstoqueResumo, type Movimentacao } from '@insumia/shared';
+import type { EstoqueResumo, Movimentacao } from '@insumia/shared';
 import { api } from '../lib/api';
-import { money, dateTime } from '../lib/format';
+import { money, date, dateTime } from '../lib/format';
 import { useTableControls } from '../lib/useTableControls';
 import { exportToCsv } from '../lib/csv';
 import {
@@ -27,16 +27,37 @@ const TIPO_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = { ok: 'OK', baixo: 'Baixo', esgotado: 'Esgotado' };
 
+function ValidadeCell({ item }: { item: EstoqueResumo }) {
+  if (!item.proximaValidade) return <span className="text-ink-400">—</span>;
+  const d = date(item.proximaValidade);
+  if (item.validadeStatus === 'vencido') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+        Vencido · {d}
+      </span>
+    );
+  }
+  if (item.validadeStatus === 'proximo') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+        {item.diasParaVencer}d · {d}
+      </span>
+    );
+  }
+  return <span className="text-ink-500">{d}</span>;
+}
+
 function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
   const table = useTableControls(rows, {
-    searchText: (i) => `${i.medicamento.nome} ${i.medicamento.fabricante ?? ''}`,
+    searchText: (i) => `${i.medicamento.nome} ${i.medicamento.fabricante ?? ''} ${i.lote ?? ''}`,
     sortAccessors: {
       produto: (i) => i.medicamento.nome ?? '',
       quantidade: (i) => i.quantidade,
       valor: (i) => Number(i.medicamento.precoUnitario ?? 0) * i.quantidade,
       status: (i) => i.status,
+      validade: (i) => i.proximaValidade ?? '9999',
     },
-    initialSort: { key: 'produto', dir: 'asc' },
+    initialSort: { key: 'validade', dir: 'asc' },
   });
 
   const handleExport = () =>
@@ -44,6 +65,8 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
       { header: 'Produto', value: (i) => i.medicamento.nome ?? '' },
       { header: 'Fabricante', value: (i) => i.medicamento.fabricante ?? '' },
       { header: 'Quantidade', value: (i) => i.quantidade },
+      { header: 'Lote', value: (i) => i.lote ?? '' },
+      { header: 'Validade', value: (i) => (i.proximaValidade ? date(i.proximaValidade) : '') },
       {
         header: 'Valor em estoque',
         value: (i) => (Number(i.medicamento.precoUnitario ?? 0) * i.quantidade).toFixed(2),
@@ -62,7 +85,8 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
           <thead>
             <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
               <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <th className="px-6 py-3 font-medium">Categoria</th>
+              <th className="px-6 py-3 font-medium">Lote</th>
+              <SortHeader label="Validade" sortKey="validade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
               <SortHeader label="Quantidade" sortKey="quantidade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
               <SortHeader label="Valor em estoque" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
               <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -70,13 +94,14 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
           </thead>
           <tbody className="divide-y divide-black/5">
             {table.pageRows.length === 0 ? (
-              <EmptyRow colSpan={5} message="Nenhum produto encontrado" />
+              <EmptyRow colSpan={6} message="Nenhum produto encontrado" />
             ) : (
               table.pageRows.map((i) => (
                 <tr key={i.medicamento.id} className="hover:bg-surface-base">
                   <td className="px-6 py-3 font-medium text-ink-900">{i.medicamento.nome}</td>
-                  <td className="px-6 py-3 text-ink-500">
-                    {i.medicamento.categoria ? CATEGORIA_LABEL[i.medicamento.categoria] : '—'}
+                  <td className="px-6 py-3 text-ink-500">{i.lote ?? '—'}</td>
+                  <td className="px-6 py-3">
+                    <ValidadeCell item={i} />
                   </td>
                   <td className="px-6 py-3 font-semibold text-ink-900">{i.quantidade} un</td>
                   <td className="px-6 py-3 text-ink-700">

@@ -189,6 +189,9 @@ export function DashboardPage() {
 
   const aguardando = todos.filter((p) => p.status === 'aguardando_cotacao' || p.status === 'cotado');
   const baixoEstoque = (estoqueQ.data ?? []).filter((i) => i.status !== 'ok');
+  const vencimentos = (estoqueQ.data ?? [])
+    .filter((i) => i.validadeStatus !== 'ok')
+    .sort((a, b) => (a.diasParaVencer ?? 0) - (b.diasParaVencer ?? 0));
 
   return (
     <div>
@@ -340,6 +343,54 @@ export function DashboardPage() {
                   {baixoEstoque.length === 0 ? (
                     <p className="px-5 py-10 text-center text-sm text-ink-400">
                       Estoque saudável 🎉
+                    </p>
+                  ) : null}
+                </div>
+              </Card>
+            </div>
+
+            {/* Alerta de vencimento (FEFO) */}
+            <div className="mt-6">
+              <Card>
+                <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
+                  <h2 className="font-semibold text-brand-700">
+                    Vencimentos próximos
+                    {vencimentos.length > 0 ? (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+                        {vencimentos.length}
+                      </span>
+                    ) : null}
+                  </h2>
+                  <Link to="/estoque" className="text-xs font-medium text-brand-500 hover:underline">
+                    Ver estoque
+                  </Link>
+                </div>
+                <div className="divide-y divide-black/5">
+                  {vencimentos.slice(0, 8).map((i) => (
+                    <div
+                      key={i.medicamento.id}
+                      className="flex items-center justify-between px-5 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-ink-900">{i.medicamento.nome}</p>
+                        <p className="text-xs text-ink-500">
+                          Lote {i.lote ?? '—'} · {i.quantidade} un
+                        </p>
+                      </div>
+                      {i.validadeStatus === 'vencido' ? (
+                        <span className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-600">
+                          Vencido
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                          Vence em {i.diasParaVencer}d
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {vencimentos.length === 0 ? (
+                    <p className="px-5 py-10 text-center text-sm text-ink-400">
+                      Nenhum lote próximo do vencimento 🎉
                     </p>
                   ) : null}
                 </div>
