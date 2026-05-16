@@ -106,20 +106,20 @@ async function main() {
     }
   }
 
-  // Usuário de demonstração (login padrão)
+  // Conta admin do cliente (Valério) — login do back-office.
+  // upsert garante que o nome seja atualizado mesmo se a conta já existir.
   const senhaHash = await bcrypt.hash('demo12345', 10);
-  const demo = await prisma.user.findUnique({ where: { email: 'demo@insumia.app' } });
-  if (!demo) {
-    await prisma.user.create({
-      data: {
-        nome: 'Demo Insumia',
-        email: 'demo@insumia.app',
-        empresa: 'Insumia',
-        passwordHash: senhaHash,
-        role: 'admin',
-      },
-    });
-  }
+  await prisma.user.upsert({
+    where: { email: 'demo@insumia.app' },
+    update: { nome: 'Valério', empresa: 'Insumia', role: 'admin' },
+    create: {
+      nome: 'Valério',
+      email: 'demo@insumia.app',
+      empresa: 'Insumia',
+      passwordHash: senhaHash,
+      role: 'admin',
+    },
+  });
 
   // Clínicas-clientes
   const clientes: { id: string }[] = [];
