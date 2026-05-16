@@ -95,7 +95,7 @@ export default function CarrinhoScreen() {
 
       {/* Footer navy card */}
       {itens.length > 0 ? (
-        <View className="absolute bottom-24 mx-auto self-center" style={{ width: 374 }}>
+        <View className="absolute bottom-28 mx-auto self-center" style={{ width: 374 }}>
           <View className="rounded-card bg-brand-500 px-5 pb-7 pt-5">
             <View className="flex-row items-center justify-between">
               <View>
