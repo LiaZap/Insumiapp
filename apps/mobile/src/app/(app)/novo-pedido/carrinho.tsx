@@ -1,6 +1,7 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useShallow } from 'zustand/react/shallow';
 
 import { SolarIcon } from '@/components/icons/SolarIcon';
 import { MedicamentoRow } from '@/components/medicamento/MedicamentoRow';
@@ -13,7 +14,7 @@ import { useCriarPedido } from '@/features/pedidos/pedidos.hooks';
 
 export default function CarrinhoScreen() {
   const router = useRouter();
-  const itens = useCarrinhoStore(selectItensArray);
+  const itens = useCarrinhoStore(useShallow(selectItensArray));
   const totalItens = useCarrinhoStore(selectTotalItens);
   const setQty = useCarrinhoStore((s) => s.setQty);
   const clear = useCarrinhoStore((s) => s.clear);
