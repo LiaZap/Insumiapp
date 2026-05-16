@@ -106,8 +106,22 @@ async function main() {
     }
   }
 
-  // Clínicas-clientes
+  // Usuário de demonstração (login padrão)
   const senhaHash = await bcrypt.hash('demo12345', 10);
+  const demo = await prisma.user.findUnique({ where: { email: 'demo@insumia.app' } });
+  if (!demo) {
+    await prisma.user.create({
+      data: {
+        nome: 'Demo Insumia',
+        email: 'demo@insumia.app',
+        empresa: 'Insumia',
+        passwordHash: senhaHash,
+        role: 'admin',
+      },
+    });
+  }
+
+  // Clínicas-clientes
   const clientes: { id: string }[] = [];
   for (const c of clinicasSeed) {
     const existing = await prisma.user.findUnique({ where: { email: c.email } });
