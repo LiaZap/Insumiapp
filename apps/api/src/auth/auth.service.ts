@@ -11,15 +11,21 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
+  /** E-mail é case-insensitive — normaliza para evitar falha por maiúscula/espaço. */
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
   async signup(dto: SignupInput): Promise<{ user: SharedUser; accessToken: string }> {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = this.normalizeEmail(dto.email);
+    const exists = await this.prisma.user.findUnique({ where: { email } });
     if (exists) throw new ConflictException('E-mail já cadastrado');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
         nome: dto.nome,
-        email: dto.email,
+        email,
         passwordHash,
         empresa: dto.empresa ?? null,
       },
@@ -28,7 +34,8 @@ export class AuthService {
   }
 
   async login(dto: LoginInput): Promise<{ user: SharedUser; accessToken: string }> {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = this.normalizeEmail(dto.email);
+    const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas');
