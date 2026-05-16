@@ -109,7 +109,41 @@ export class AgrupamentosService {
         vencedor: l.vencedor,
         criadoEm: l.criadoEm.toISOString(),
       })),
+      rastreabilidade: a.finalizadoEm
+        ? {
+            lote: a.lote,
+            validade: a.validade?.toISOString() ?? null,
+            fabricante: a.fabricante,
+            notaFiscal: a.notaFiscal,
+            fornecedor: a.lances.find((l) => l.vencedor)?.fornecedorNome ?? null,
+            finalizadoEm: a.finalizadoEm.toISOString(),
+          }
+        : null,
     };
+  }
+
+  /** Admin finaliza a compra e registra a rastreabilidade (lote, fabricante, NF). */
+  async finalizar(
+    id: string,
+    dto: { lote: string; validade?: string; fabricante?: string; notaFiscal?: string },
+  ) {
+    const a = await this.prisma.agrupamento.findUnique({ where: { id } });
+    if (!a) throw new NotFoundException('Agrupamento não encontrado');
+    if (a.status !== 'cotado') {
+      throw new BadRequestException('Só agrupamentos cotados podem ser finalizados');
+    }
+    await this.prisma.agrupamento.update({
+      where: { id },
+      data: {
+        status: 'finalizado',
+        lote: dto.lote,
+        validade: dto.validade ? new Date(dto.validade) : null,
+        fabricante: dto.fabricante,
+        notaFiscal: dto.notaFiscal,
+        finalizadoEm: new Date(),
+      },
+    });
+    return this.detalhe(id);
   }
 
   /** Info pública de um agrupamento — usada na página de lance do fornecedor. */

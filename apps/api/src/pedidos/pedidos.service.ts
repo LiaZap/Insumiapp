@@ -49,10 +49,36 @@ export class PedidosService {
   async findById(id: string) {
     const p = await this.prisma.pedido.findUnique({
       where: { id },
-      include: PEDIDO_INCLUDE,
+      include: {
+        usuario: { select: { id: true, nome: true, empresa: true, email: true } },
+        itens: {
+          include: {
+            medicamento: true,
+            agrupamento: { include: { lances: { where: { vencedor: true } } } },
+          },
+        },
+      },
     });
     if (!p) throw new NotFoundException('Pedido não encontrado');
-    return p;
+
+    // Anexa a rastreabilidade (vem do agrupamento finalizado de cada item)
+    return {
+      ...p,
+      itens: p.itens.map((it) => {
+        const ag = it.agrupamento;
+        const rastreabilidade =
+          ag?.finalizadoEm != null
+            ? {
+                lote: ag.lote,
+                validade: ag.validade?.toISOString() ?? null,
+                fabricante: ag.fabricante,
+                notaFiscal: ag.notaFiscal,
+                fornecedor: ag.lances[0]?.fornecedorNome ?? null,
+              }
+            : null;
+        return { ...it, rastreabilidade };
+      }),
+    };
   }
 
   /** Admin envia a cotação: define preço/disponibilidade por item, prazo e validade. */

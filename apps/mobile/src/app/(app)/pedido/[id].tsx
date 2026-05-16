@@ -32,35 +32,66 @@ function ItemRow({ item, isLast }: { item: PedidoItemResponse; isLast: boolean }
   const med = item.medicamento;
   const subtitle = [med.apresentacao, med.dosagem].filter(Boolean).join(' • ');
   const subtotal = Number(item.precoUnitario) * item.quantidade;
+  const rastreio = item.rastreabilidade;
   return (
     <View
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingVertical: 16,
         borderBottomWidth: isLast ? 0 : 1,
         borderStyle: 'dashed',
         borderBottomColor: '#E0E0E0',
       }}
     >
-      <View className="h-11 w-11 items-center justify-center rounded-icon bg-[#EBEBEB]">
-        <SolarIcon
-          name={med.apresentacao?.toLowerCase().includes('seringa') ? 'syringe-linear' : 'jar-of-pills-linear'}
-          size={18}
-          color="#4A4A4A"
-        />
+      <View className="flex-row items-center">
+        <View className="h-11 w-11 items-center justify-center rounded-icon bg-[#EBEBEB]">
+          <SolarIcon
+            name={med.apresentacao?.toLowerCase().includes('seringa') ? 'syringe-linear' : 'jar-of-pills-linear'}
+            size={18}
+            color="#4A4A4A"
+          />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="font-medium text-sm text-[#4A4A4A]">
+            {med.nome}
+            {subtitle ? ` • ${subtitle}` : ''}
+          </Text>
+          <Text className="mt-1 text-xs text-[#969696]">
+            {med.fabricante ?? med.principioAtivo ?? ''}
+          </Text>
+        </View>
+        <View className="items-end">
+          <Text className="font-medium text-sm text-black">{formatMoney(subtotal)}</Text>
+          <Text className="mt-1 text-xs text-[#969696]">{item.quantidade} Unidades</Text>
+        </View>
       </View>
-      <View className="ml-3 flex-1">
-        <Text className="font-medium text-sm text-[#4A4A4A]">
-          {med.nome}
-          {subtitle ? ` • ${subtitle}` : ''}
-        </Text>
-        <Text className="mt-1 text-xs text-[#969696]">{med.fabricante ?? med.principioAtivo ?? ''}</Text>
-      </View>
-      <View className="items-end">
-        <Text className="font-medium text-sm text-black">{formatMoney(subtotal)}</Text>
-        <Text className="mt-1 text-xs text-[#969696]">{item.quantidade} Unidades</Text>
-      </View>
+
+      {/* Rastreabilidade — lote/fabricante/fornecedor (Vigilância Sanitária) */}
+      {rastreio ? (
+        <View className="mt-3 ml-14 rounded-icon bg-brand-50 p-3">
+          <View className="flex-row items-center gap-1.5">
+            <SolarIcon name="file-check-bold-duotone" size={13} color={colors.brand[500]} />
+            <Text className="font-semibold text-[11px] text-brand-700">Rastreabilidade</Text>
+          </View>
+          <View className="mt-1.5 flex-row flex-wrap gap-x-4 gap-y-1">
+            {rastreio.lote ? <TraceTag label="Lote" value={rastreio.lote} /> : null}
+            {rastreio.validade ? (
+              <TraceTag label="Validade" value={formatDate(rastreio.validade)} />
+            ) : null}
+            {rastreio.fabricante ? <TraceTag label="Fabricante" value={rastreio.fabricante} /> : null}
+            {rastreio.fornecedor ? <TraceTag label="Fornecedor" value={rastreio.fornecedor} /> : null}
+            {rastreio.notaFiscal ? <TraceTag label="NF" value={rastreio.notaFiscal} /> : null}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function TraceTag({ label, value }: { label: string; value: string }) {
+  return (
+    <View>
+      <Text className="text-[9px] text-ink-400">{label}</Text>
+      <Text className="text-[11px] font-medium text-ink-700">{value}</Text>
     </View>
   );
 }

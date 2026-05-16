@@ -26,6 +26,7 @@ const FILTERS = [
   { key: 'aberto', label: 'Abertos' },
   { key: 'em_cotacao', label: 'Em cotação' },
   { key: 'cotado', label: 'Cotados' },
+  { key: 'finalizado', label: 'Finalizados' },
 ] as const;
 
 export function AgrupamentosPage() {
@@ -61,6 +62,19 @@ export function AgrupamentosPage() {
       (await api.post(`/api/v1/agrupamentos/${p.id}/escolher/${p.lanceId}`)).data,
     onSuccess: invalidate,
   });
+
+  const finalizar = useMutation({
+    mutationFn: async (p: {
+      id: string;
+      lote: string;
+      validade?: string;
+      fabricante?: string;
+      notaFiscal?: string;
+    }) => (await api.patch(`/api/v1/agrupamentos/${p.id}/finalizar`, p)).data,
+    onSuccess: invalidate,
+  });
+
+  const [trace, setTrace] = useState({ lote: '', validade: '', fabricante: '', notaFiscal: '' });
 
   const byFilter = useMemo(
     () => (data ?? []).filter((a) => filter === 'todos' || a.status === filter),
@@ -314,6 +328,69 @@ export function AgrupamentosPage() {
                     </p>
                   ) : null}
 
+                  {/* Finalizar compra — registrar rastreabilidade */}
+                  {detalhe.data.status === 'cotado' ? (
+                    <div className="mt-5 rounded-xl border border-brand-100 bg-brand-50/50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                        Finalizar compra · rastreabilidade
+                      </p>
+                      <p className="mt-1 text-xs text-ink-500">
+                        Registre os dados exigidos pela Vigilância Sanitária.
+                      </p>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <TraceField label="Lote *" value={trace.lote} onChange={(v) => setTrace({ ...trace, lote: v })} />
+                        <TraceField
+                          label="Validade"
+                          type="date"
+                          value={trace.validade}
+                          onChange={(v) => setTrace({ ...trace, validade: v })}
+                        />
+                        <TraceField label="Fabricante" value={trace.fabricante} onChange={(v) => setTrace({ ...trace, fabricante: v })} />
+                        <TraceField label="Nota fiscal" value={trace.notaFiscal} onChange={(v) => setTrace({ ...trace, notaFiscal: v })} />
+                      </div>
+                      <button
+                        onClick={() =>
+                          finalizar.mutate({
+                            id: detalhe.data!.id,
+                            lote: trace.lote,
+                            validade: trace.validade
+                              ? new Date(trace.validade).toISOString()
+                              : undefined,
+                            fabricante: trace.fabricante || undefined,
+                            notaFiscal: trace.notaFiscal || undefined,
+                          })
+                        }
+                        disabled={finalizar.isPending || !trace.lote.trim()}
+                        className="mt-3 w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                      >
+                        {finalizar.isPending ? 'Finalizando...' : 'Finalizar e registrar'}
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Rastreabilidade registrada */}
+                  {detalhe.data.rastreabilidade ? (
+                    <div className="mt-5 rounded-xl border border-success/30 bg-green-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-success">
+                        ✓ Rastreabilidade registrada
+                      </p>
+                      <dl className="mt-2 grid grid-cols-2 gap-y-1.5 text-xs">
+                        <Trace term="Lote" def={detalhe.data.rastreabilidade.lote} />
+                        <Trace
+                          term="Validade"
+                          def={
+                            detalhe.data.rastreabilidade.validade
+                              ? dateTime(detalhe.data.rastreabilidade.validade).slice(0, 10)
+                              : null
+                          }
+                        />
+                        <Trace term="Fabricante" def={detalhe.data.rastreabilidade.fabricante} />
+                        <Trace term="Fornecedor" def={detalhe.data.rastreabilidade.fornecedor} />
+                        <Trace term="Nota fiscal" def={detalhe.data.rastreabilidade.notaFiscal} />
+                      </dl>
+                    </div>
+                  ) : null}
+
                   <p className="mt-6 mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
                     Demanda por clínica
                   </p>
@@ -342,5 +419,38 @@ export function AgrupamentosPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function TraceField({
+  label,
+  value,
+  onChange,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] font-medium text-ink-700">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-brand-100 px-2.5 py-1.5 text-xs outline-none focus:border-brand-500"
+      />
+    </div>
+  );
+}
+
+function Trace({ term, def }: { term: string; def?: string | null }) {
+  return (
+    <>
+      <dt className="text-ink-400">{term}</dt>
+      <dd className="font-medium text-ink-900">{def || '—'}</dd>
+    </>
   );
 }

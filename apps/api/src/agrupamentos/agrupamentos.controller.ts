@@ -3,8 +3,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   criarLanceAdminSchema,
   criarLancePublicoSchema,
+  finalizarAgrupamentoSchema,
   type CriarLanceAdminInput,
   type CriarLancePublicoInput,
+  type FinalizarAgrupamentoInput,
 } from '@insumia/shared';
 import { AgrupamentosService } from './agrupamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -43,6 +45,14 @@ export class AgrupamentosController {
   @Post(':id/escolher/:lanceId')
   escolherVencedor(@Param('id') id: string, @Param('lanceId') lanceId: string) {
     return this.agrupamentos.escolherVencedor(id, lanceId);
+  }
+
+  @Patch(':id/finalizar')
+  finalizar(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(finalizarAgrupamentoSchema)) dto: FinalizarAgrupamentoInput,
+  ) {
+    return this.agrupamentos.finalizar(id, dto);
   }
 }
 

@@ -89,11 +89,16 @@ rascunho → aguardando_cotacao → cotado → confirmado → em_separacao → e
 - Conta `aberta` vencida vira `vencida` automaticamente.
 - Dashboard: total a pagar/receber, vencidas e fluxo de caixa (6 meses).
 
-## Rastreabilidade (Vigilância Sanitária) — a implementar
+## Rastreabilidade (Vigilância Sanitária)
 
 Exigência regulatória: para cada medicamento entregue, registrar **fabricante, lote,
-validade, fornecedor e origem** — documentação completa da fábrica até a clínica.
-Cada clínica que recebe deve ter o comprovante da sua fatia da compra.
+validade, fornecedor e nota fiscal** — documentação da fábrica até a clínica.
+
+- Ao **finalizar** um agrupamento cotado, o admin registra lote, validade, fabricante e NF;
+  o status vai para `finalizado`.
+- A rastreabilidade fica no `Agrupamento` e é exposta em **cada item de pedido** das clínicas
+  daquele agrupamento — cada clínica vê o comprovante da sua fatia da compra.
+- O fornecedor é derivado do lance vencedor.
 
 ## Catálogo
 
@@ -112,8 +117,7 @@ Cada clínica que recebe deve ter o comprovante da sua fatia da compra.
 
 ## Roadmap de regras
 
-- Fornecedores + lances + link público de cotação.
-- Rastreabilidade lote/fabricante (FEFO + compliance).
+- Alerta de vencimento por validade/lote (FEFO).
 - Faturamento split por clínica.
 - Grupos de clínicas (odontológicas/médicas/estéticas) que se comunicam.
 - Tabela de preço negociado por cliente/tier.

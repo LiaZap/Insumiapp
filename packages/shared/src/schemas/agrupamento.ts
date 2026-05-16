@@ -43,11 +43,31 @@ export const agrupamentoResumoSchema = z.object({
 });
 export type AgrupamentoResumo = z.infer<typeof agrupamentoResumoSchema>;
 
+// Rastreabilidade — dados da compra (Vigilância Sanitária)
+export const rastreabilidadeSchema = z.object({
+  lote: z.string().nullable().optional(),
+  validade: z.string().nullable().optional(),
+  fabricante: z.string().nullable().optional(),
+  notaFiscal: z.string().nullable().optional(),
+  fornecedor: z.string().nullable().optional(),
+  finalizadoEm: z.string().nullable().optional(),
+});
+export type Rastreabilidade = z.infer<typeof rastreabilidadeSchema>;
+
+export const finalizarAgrupamentoSchema = z.object({
+  lote: z.string().min(1, 'Informe o lote'),
+  validade: z.string().datetime().optional(),
+  fabricante: z.string().optional(),
+  notaFiscal: z.string().optional(),
+});
+export type FinalizarAgrupamentoInput = z.infer<typeof finalizarAgrupamentoSchema>;
+
 // Detalhe
 export const agrupamentoDetalheSchema = agrupamentoResumoSchema.extend({
   publicToken: z.string(),
   observacao: z.string().nullable().optional(),
   linhas: z.array(agrupamentoLinhaSchema),
   lances: z.array(lanceSchema),
+  rastreabilidade: rastreabilidadeSchema.nullable().optional(),
 });
 export type AgrupamentoDetalhe = z.infer<typeof agrupamentoDetalheSchema>;

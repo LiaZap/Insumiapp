@@ -148,6 +148,13 @@ model Agrupamento {
   fechadoEm     DateTime?
   atualizadoEm  DateTime          @updatedAt
 
+  // Rastreabilidade (Vigilância Sanitária) — preenchida ao finalizar a compra
+  lote         String?
+  validade     DateTime?
+  fabricante   String?
+  notaFiscal   String?
+  finalizadoEm DateTime?
+
   medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
   itens       PedidoItem[]
   lances      Lance[]

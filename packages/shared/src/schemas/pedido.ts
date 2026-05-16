@@ -30,6 +30,15 @@ export const criarPedidoSchema = z.object({
 });
 export type CriarPedidoInput = z.infer<typeof criarPedidoSchema>;
 
+// Rastreabilidade do item (vem do agrupamento finalizado)
+export const itemRastreabilidadeSchema = z.object({
+  lote: z.string().nullable().optional(),
+  validade: z.string().nullable().optional(),
+  fabricante: z.string().nullable().optional(),
+  notaFiscal: z.string().nullable().optional(),
+  fornecedor: z.string().nullable().optional(),
+});
+
 // Item retornado pela API — inclui medicamento aninhado
 export const pedidoItemResponseSchema = z.object({
   id: z.string().uuid(),
@@ -39,6 +48,7 @@ export const pedidoItemResponseSchema = z.object({
   disponivel: z.boolean().optional(),
   observacao: z.string().nullable().optional(),
   medicamento: medicamentoSchema.partial().extend({ nome: z.string() }),
+  rastreabilidade: itemRastreabilidadeSchema.nullable().optional(),
 });
 export type PedidoItemResponse = z.infer<typeof pedidoItemResponseSchema>;
 
