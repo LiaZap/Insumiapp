@@ -33,6 +33,9 @@
       "metro-runtime": "~0.81.0",
       "metro-resolver": "~0.81.0",
       "metro-core": "~0.81.0"
+    },
+    "patchedDependencies": {
+      "react-native-css-interop@0.2.3": "patches/react-native-css-interop@0.2.3.patch"
     }
   }
 }
