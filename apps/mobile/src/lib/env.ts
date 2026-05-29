@@ -2,10 +2,13 @@ import Constants from 'expo-constants';
 
 const fromExtra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
 
-// Prioriza app.json → extra.apiUrl (fonte controlada). .env é fallback.
+// URL de produção como fallback final — garante que o build de release
+// nunca caia em localhost mesmo se o expo-constants nao expor `extra`.
+const PROD_API_URL = 'https://sistemas-api.cusrzj.easypanel.host';
+
 export const env = {
   apiUrl:
-    (fromExtra.apiUrl as string | undefined) ??
     (process.env.EXPO_PUBLIC_API_URL as string | undefined) ??
-    'http://localhost:3333',
+    (fromExtra.apiUrl as string | undefined) ??
+    PROD_API_URL,
 };
