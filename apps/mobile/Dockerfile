@@ -3,7 +3,8 @@
 # Build context: raiz do monorepo. Porta exposta: 8081.
 
 FROM node:20-slim
-RUN corepack enable
+# Corepack do node:20-slim tem bug com pnpm 10 — instala explicitamente via npm
+RUN npm install -g pnpm@10.30.3
 WORKDIR /app
 
 COPY . .
