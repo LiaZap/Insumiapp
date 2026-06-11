@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Pedido, PedidoItemResponse } from '@insumia/shared';
@@ -312,7 +312,27 @@ export default function PedidoDetalheScreen() {
           <Text className="text-sm text-ink-500">
             Precisamos das receitas para efetuar seu pedido
           </Text>
-          <Pressable className="mt-3 h-11 items-center justify-center rounded-pill bg-brand-50 active:opacity-80">
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                'Enviar receituário',
+                'Envie a foto ou PDF do receituário pelo WhatsApp da Insumia para liberar o pedido.',
+                [
+                  { text: 'Fechar', style: 'cancel' },
+                  {
+                    text: 'Abrir WhatsApp',
+                    onPress: () => {
+                      const msg = encodeURIComponent(
+                        `Receituário do pedido ${pedido.numero}`,
+                      );
+                      Linking.openURL(`https://wa.me/5511999999999?text=${msg}`);
+                    },
+                  },
+                ],
+              )
+            }
+            className="mt-3 h-11 items-center justify-center rounded-pill bg-brand-50 active:opacity-80"
+          >
             <Text className="font-semibold text-sm text-brand-500">Enviar Receituário</Text>
           </Pressable>
         </Section>
@@ -337,7 +357,15 @@ export default function PedidoDetalheScreen() {
 
         {/* Ajuda */}
         <Section icon="bell-linear" title="Ajuda do Pedido">
-          <Pressable className="flex-row items-center justify-between py-3 active:opacity-70">
+          <Pressable
+            onPress={() => {
+              const msg = encodeURIComponent(
+                `Olá, preciso de ajuda com o pedido ${pedido.numero}.`,
+              );
+              Linking.openURL(`https://wa.me/5511999999999?text=${msg}`);
+            }}
+            className="flex-row items-center justify-between py-3 active:opacity-70"
+          >
             <Text className="text-sm text-ink-700">Falar com Atendente</Text>
             <SolarIcon
               name="alt-arrow-down-linear"
@@ -347,7 +375,10 @@ export default function PedidoDetalheScreen() {
             />
           </Pressable>
           <View style={{ height: 1, backgroundColor: '#E0E0E0' }} />
-          <Pressable className="flex-row items-center justify-between py-3 active:opacity-70">
+          <Pressable
+            onPress={() => router.push('/ajuda')}
+            className="flex-row items-center justify-between py-3 active:opacity-70"
+          >
             <Text className="text-sm text-ink-700">Perguntas Frequentes</Text>
             <SolarIcon
               name="alt-arrow-down-linear"

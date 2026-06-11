@@ -58,7 +58,10 @@ export default function MovimentacoesScreen() {
                   <Text className="mt-auto font-semibold text-base text-brand-900">
                     {avgPorDia} retiradas por dia em média
                   </Text>
-                  <Pressable className="mt-3 flex-row items-center justify-between">
+                  <Pressable
+                    onPress={() => router.navigate('/novo-pedido')}
+                    className="mt-3 flex-row items-center justify-between"
+                  >
                     <Text className="font-medium text-xs text-brand-900">Informar Uso</Text>
                     <SolarIcon
                       name="arrow-right-up-linear"
@@ -78,7 +81,10 @@ export default function MovimentacoesScreen() {
                   <Text className="mt-1 text-xs text-brand-900/40">
                     Quem pode fazer retiradas e inclusões
                   </Text>
-                  <Pressable className="mt-3 flex-row items-center justify-between">
+                  <Pressable
+                    onPress={() => router.push('/perfil')}
+                    className="mt-3 flex-row items-center justify-between"
+                  >
                     <Text className="font-medium text-xs text-brand-900">Detalhes</Text>
                     <SolarIcon
                       name="arrow-right-up-linear"

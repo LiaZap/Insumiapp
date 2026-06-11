@@ -10,10 +10,10 @@ import { usePedidos } from '@/features/pedidos/pedidos.hooks';
 import { colors } from '@/theme/tokens';
 
 const QUICK_ACTIONS = [
-  { label: 'Endereço Comercial', icon: 'map-point-bold' as const },
-  { label: 'Dados de Faturamento', icon: 'chat-round-money-bold' as const },
-  { label: 'Usuários e Permissões', icon: 'user-bold' as const },
-  { label: 'Nossa Proposta', icon: 'file-check-bold-duotone' as const },
+  { label: 'Endereço Comercial', icon: 'map-point-bold' as const, route: '/enderecos' as const },
+  { label: 'Dados de Faturamento', icon: 'chat-round-money-bold' as const, route: '/perfil' as const },
+  { label: 'Usuários e Permissões', icon: 'user-bold' as const, route: '/perfil' as const },
+  { label: 'Nossa Proposta', icon: 'file-check-bold-duotone' as const, route: '/ajuda' as const },
 ];
 
 const STATUS_FRASE: Record<PedidoStatus, string> = {
@@ -213,9 +213,10 @@ export default function Dashboard() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 8 }}
         >
           {QUICK_ACTIONS.map((a) => (
-            <View
+            <Pressable
               key={a.label}
-              className="h-[150px] w-[150px] justify-end rounded-card bg-white p-5"
+              onPress={() => router.push(a.route)}
+              className="h-[150px] w-[150px] justify-end rounded-card bg-white p-5 active:opacity-80"
             >
               <View className="absolute left-4 top-4 h-10 w-10 items-center justify-center rounded-iconLg bg-brand-50">
                 <SolarIcon name={a.icon} size={20} color={colors.brand[500]} />
@@ -223,7 +224,7 @@ export default function Dashboard() {
               <Text className="font-semibold text-sm text-brand-500" style={{ lineHeight: 18 }}>
                 {a.label}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </ScrollView>
 

@@ -1,4 +1,4 @@
-import { Alert, Pressable, Text, View, ScrollView } from 'react-native';
+import { Pressable, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -42,9 +42,6 @@ export default function MenuScreen() {
     router.replace('/login');
   };
 
-  const emBreve = (titulo: string) =>
-    Alert.alert(titulo, 'Esta seção estará disponível em breve.');
-
   return (
     <SafeAreaView className="flex-1 bg-surface-base" edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
@@ -56,12 +53,12 @@ export default function MenuScreen() {
         ) : null}
 
         <View className="mt-6 gap-3">
+          <MenuItem icon="user-bold" label="Perfil" onPress={() => router.push('/perfil')} />
           <MenuItem icon="chat-round-money-bold" label="Financeiro" onPress={() => router.push('/financeiro')} />
           <MenuItem icon="bell-linear" label="Notificações" onPress={() => router.push('/notificacoes')} />
           <MenuItem icon="box-bold-duotone" label="Movimentações" onPress={() => router.push('/movimentacoes')} />
-          <MenuItem icon="map-point-bold" label="Endereços" onPress={() => emBreve('Endereços')} />
-          <MenuItem icon="user-bold" label="Perfil & Usuários" onPress={() => emBreve('Perfil & Usuários')} />
-          <MenuItem icon="file-check-bold-duotone" label="Ajuda" onPress={() => emBreve('Ajuda')} />
+          <MenuItem icon="map-point-bold" label="Endereços" onPress={() => router.push('/enderecos')} />
+          <MenuItem icon="file-check-bold-duotone" label="Ajuda" onPress={() => router.push('/ajuda')} />
         </View>
 
         <View className="mt-8">
