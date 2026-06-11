@@ -81,7 +81,7 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
         <ExportButton onClick={handleExport} />
       </div>
       <Card>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
               <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -114,7 +114,7 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
               ))
             )}
           </tbody>
-        </table>
+        </table></div>
         <Pagination page={table.page} totalPages={table.totalPages} total={table.total} onPage={table.setPage} />
       </Card>
     </>
@@ -149,7 +149,7 @@ function MovimentacoesTab({ rows }: { rows: Movimentacao[] }) {
         <ExportButton onClick={handleExport} />
       </div>
       <Card>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
               <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -180,7 +180,7 @@ function MovimentacoesTab({ rows }: { rows: Movimentacao[] }) {
               })
             )}
           </tbody>
-        </table>
+        </table></div>
         <Pagination page={table.page} totalPages={table.totalPages} total={table.total} onPage={table.setPage} />
       </Card>
     </>
@@ -212,7 +212,7 @@ export function EstoquePage() {
   return (
     <div>
       <PageHeader title="Estoque" subtitle={`Valor total: ${money(valorTotal)}`} />
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="mb-4 flex gap-2">
           {(['estoque', 'movimentacoes'] as const).map((t) => (
             <button

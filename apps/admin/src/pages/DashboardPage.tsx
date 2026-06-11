@@ -214,13 +214,13 @@ export function DashboardPage() {
           </div>
         }
       />
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {loading ? (
           <Spinner />
         ) : (
           <>
             {/* KPIs */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               <KpiCard
                 label={`Faturamento · ${periodo}d`}
                 value={money(m.faturamento)}
@@ -250,8 +250,8 @@ export function DashboardPage() {
             </div>
 
             {/* Faturamento + Status */}
-            <div className="mt-6 grid grid-cols-3 gap-6">
-              <Card className="col-span-2 p-5">
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+              <Card className="p-5 lg:col-span-2">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="font-semibold text-brand-700">Faturamento</h2>
                   <span className="text-xs text-ink-400">Últimos {periodo} dias</span>
@@ -265,7 +265,7 @@ export function DashboardPage() {
             </div>
 
             {/* Rankings */}
-            <div className="mt-6 grid grid-cols-2 gap-6">
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
               <Card className="p-5">
                 <h2 className="mb-2 font-semibold text-brand-700">Top clientes · {periodo}d</h2>
                 {m.topClientes.length ? (
@@ -285,7 +285,7 @@ export function DashboardPage() {
             </div>
 
             {/* Listas operacionais */}
-            <div className="mt-6 grid grid-cols-2 gap-6">
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
               <Card>
                 <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
                   <h2 className="font-semibold text-brand-700">Pedidos aguardando ação</h2>

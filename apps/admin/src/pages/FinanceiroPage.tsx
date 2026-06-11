@@ -81,7 +81,7 @@ export function FinanceiroPage() {
         subtitle="Contas a pagar e a receber"
         action={<ExportButton onClick={handleExport} />}
       />
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {dashboard.data ? (
           <div className="mb-6 grid grid-cols-3 gap-4">
             <StatCard label="A pagar" value={money(dashboard.data.totalAPagar)} tone="danger" />
@@ -116,7 +116,7 @@ export function FinanceiroPage() {
             <Spinner />
           ) : (
             <>
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
                     <SortHeader label="Descrição" sortKey="descricao" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -164,7 +164,7 @@ export function FinanceiroPage() {
                     ))
                   )}
                 </tbody>
-              </table>
+              </table></div>
               <Pagination
                 page={table.page}
                 totalPages={table.totalPages}

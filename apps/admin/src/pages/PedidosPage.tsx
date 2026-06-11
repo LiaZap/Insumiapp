@@ -85,14 +85,14 @@ export function PedidosPage() {
         subtitle="Gestão de pedidos das clínicas"
         action={<ExportButton onClick={handleExport} />}
       />
-      <div className="p-8">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex gap-2">
+      <div className="p-4 md:p-8">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition md:px-4 md:text-sm ${
                   filter === f.key
                     ? 'bg-brand-500 text-white'
                     : 'bg-white text-ink-500 hover:bg-brand-50'
@@ -109,12 +109,13 @@ export function PedidosPage() {
           />
         </div>
 
-        <Card>
+        <Card className="overflow-hidden">
           {isLoading ? (
             <Spinner />
           ) : (
             <>
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
                     <SortHeader label="Pedido" sortKey="numero" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -153,6 +154,7 @@ export function PedidosPage() {
                   )}
                 </tbody>
               </table>
+              </div>
               <Pagination
                 page={table.page}
                 totalPages={table.totalPages}
@@ -168,7 +170,7 @@ export function PedidosPage() {
       {selected ? (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setSelected(null)}>
           <div
-            className="h-full w-[440px] overflow-y-auto bg-white"
+            className="h-full w-full overflow-y-auto bg-white md:w-[440px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-black/5 px-6 py-5">

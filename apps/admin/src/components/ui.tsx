@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between border-b border-black/5 bg-white px-8 py-6">
-      <div>
-        <h1 className="text-xl font-bold text-brand-700">{title}</h1>
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/5 bg-white px-4 py-4 md:px-8 md:py-6">
+      <div className="min-w-0">
+        <h1 className="text-lg font-bold text-brand-700 md:text-xl">{title}</h1>
         {subtitle ? <p className="mt-1 text-sm text-ink-500">{subtitle}</p> : null}
       </div>
       {action}

@@ -9,6 +9,9 @@
       "channel": "preview",
       "node": "20.18.0",
       "pnpm": "10.30.3",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sistemas-api.cusrzj.easypanel.host"
+      },
       "android": {
         "buildType": "apk"
       },
@@ -21,6 +24,9 @@
       "autoIncrement": true,
       "node": "20.18.0",
       "pnpm": "10.30.3",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sistemas-api.cusrzj.easypanel.host"
+      },
       "android": {
         "buildType": "app-bundle"
       }

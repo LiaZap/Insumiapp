@@ -110,7 +110,7 @@ export function AgrupamentosPage() {
         subtitle="Demanda de várias clínicas agregada por medicamento — base da cotação em volume"
         action={<ExportButton onClick={handleExport} />}
       />
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex gap-2">
             {FILTERS.map((f) => (
@@ -139,7 +139,7 @@ export function AgrupamentosPage() {
             <Spinner />
           ) : (
             <>
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
                     <SortHeader label="Medicamento" sortKey="medicamento" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -177,7 +177,7 @@ export function AgrupamentosPage() {
                     ))
                   )}
                 </tbody>
-              </table>
+              </table></div>
               <Pagination
                 page={table.page}
                 totalPages={table.totalPages}

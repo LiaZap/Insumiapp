@@ -8,7 +8,15 @@ type ApiError = AxiosError<{ message?: string }>;
 
 function extractMessage(err: unknown): string {
   const e = err as ApiError;
-  return e.response?.data?.message ?? e.message ?? 'Erro inesperado';
+  if (e.response?.data?.message) return e.response.data.message;
+  // Erros de rede chegam aqui sem response (axios "Network Error", timeout, etc.)
+  if (e.message === 'Network Error' || e.code === 'ERR_NETWORK') {
+    return 'Não foi possível conectar ao servidor. Verifique sua internet e tente de novo.';
+  }
+  if (e.code === 'ECONNABORTED') {
+    return 'O servidor demorou demais para responder. Tente de novo.';
+  }
+  return e.message ?? 'Erro inesperado';
 }
 
 export function useLogin() {

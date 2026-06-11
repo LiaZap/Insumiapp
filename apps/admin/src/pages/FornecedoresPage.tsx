@@ -98,7 +98,7 @@ export function FornecedoresPage() {
           </div>
         }
       />
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="mb-4 flex justify-end">
           <SearchInput value={table.query} onChange={table.setQuery} placeholder="Buscar fornecedor..." />
         </div>
@@ -107,7 +107,7 @@ export function FornecedoresPage() {
             <Spinner />
           ) : (
             <>
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
                     <SortHeader label="Nome" sortKey="nome" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
@@ -139,7 +139,7 @@ export function FornecedoresPage() {
                     ))
                   )}
                 </tbody>
-              </table>
+              </table></div>
               <Pagination page={table.page} totalPages={table.totalPages} total={table.total} onPage={table.setPage} />
             </>
           )}
