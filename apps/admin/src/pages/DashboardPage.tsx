@@ -52,13 +52,14 @@ function KpiCard({
 }) {
   const up = (trend ?? 0) >= 0;
   return (
-    <Card className="p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
-      <div className="mt-1 flex items-end justify-between">
-        <p className="text-2xl font-bold text-brand-700">{value}</p>
+    <Card className="p-4 md:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 flex-1 text-[10px] font-medium uppercase tracking-wide text-ink-400 md:text-xs">
+          {label}
+        </p>
         {trend !== undefined ? (
           <span
-            className={`mb-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold md:text-[11px] ${
               up ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
             }`}
           >
@@ -66,6 +67,7 @@ function KpiCard({
           </span>
         ) : null}
       </div>
+      <p className="mt-2 break-words text-lg font-bold text-brand-700 md:text-2xl">{value}</p>
       {spark ? (
         <div className="mt-2">
           <Sparkline data={spark} color={color} />
