@@ -82,18 +82,18 @@ export default function PerfilScreen() {
         <View className="mt-8 gap-4">
           <Field
             label="Nome do responsável"
-            value={editing ? nome : (user?.nome ?? '—')}
+            value={editing ? nome : (user?.nome ?? '-')}
             editable={editing}
             onChangeText={setNome}
           />
           <Field
             label="Clínica / Empresa"
-            value={editing ? empresa : (user?.empresa ?? '—')}
+            value={editing ? empresa : (user?.empresa ?? '-')}
             editable={editing}
             onChangeText={setEmpresa}
             placeholder="Nome da clínica"
           />
-          <Field label="E-mail" value={user?.email ?? '—'} />
+          <Field label="E-mail" value={user?.email ?? '-'} />
         </View>
 
         {/* Acoes */}

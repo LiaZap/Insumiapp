@@ -104,8 +104,8 @@ export function TermosPage() {
         </Section>
 
         <Section title="8. Propriedade intelectual">
-          Todos os direitos sobre a plataforma Insumia — incluindo o código,
-          design, marca, logotipos, textos, ilustrações e bases de dados — são de
+          Todos os direitos sobre a plataforma Insumia, incluindo o código,
+          design, marca, logotipos, textos, ilustrações e bases de dados, são de
           titularidade exclusiva da Insumia ou de seus licenciadores.
           Concedemos a você uma licença pessoal, limitada, não exclusiva e
           revogável para usar o app durante a vigência destes Termos. Você não

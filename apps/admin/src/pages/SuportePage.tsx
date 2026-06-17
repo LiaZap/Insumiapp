@@ -18,7 +18,7 @@ export function SuportePage() {
       `Nome: ${nome}\n` +
       `E-mail: ${email}\n\n` +
       `${mensagem}\n\n` +
-      `— Enviado pelo formulário de suporte do Insumia`;
+      `Enviado pelo formulário de suporte do Insumia`;
     const url = `mailto:${EMAIL_SUPORTE}?subject=${encodeURIComponent(
       `[Suporte Insumia] ${assunto}`,
     )}&body=${encodeURIComponent(body)}`;
@@ -174,7 +174,7 @@ export function SuportePage() {
               repassados a cada clínica do grupo.
             </Faq>
             <Faq pergunta="Onde fica meu histórico de notas fiscais?">
-              Cada pedido entregue tem a nota fiscal anexada — abra o detalhe do
+              Cada pedido entregue tem a nota fiscal anexada. Abra o detalhe do
               pedido na aba Pedidos para visualizá-la ou baixá-la.
             </Faq>
             <Faq pergunta="Quero excluir minha conta. Como faço?">

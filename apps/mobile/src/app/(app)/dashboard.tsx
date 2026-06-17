@@ -17,9 +17,9 @@ const QUICK_ACTIONS = [
 ];
 
 const STATUS_FRASE: Record<PedidoStatus, string> = {
-  rascunho: 'Rascunho — finalize para enviar.',
+  rascunho: 'Rascunho. Finalize para enviar.',
   aguardando_cotacao: 'Aguardando cotação da equipe Insumia®.',
-  cotado: 'Cotação recebida — revise e aprove.',
+  cotado: 'Cotação recebida. Revise e aprove.',
   confirmado: 'Pedido aprovado, em preparação.',
   em_separacao: 'Pedido em separação.',
   enviado: 'Pedido enviado, a caminho da clínica.',

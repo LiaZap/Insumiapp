@@ -31,7 +31,7 @@ const FAQ = [
     pergunta: 'Posso recusar uma cotação?',
     resposta:
       'Sim. Quando o pedido estiver no status "Cotado", você pode aceitar ou recusar ' +
-      'a cotação dentro do prazo de validade — sem custo.',
+      'a cotação dentro do prazo de validade, sem custo.',
   },
   {
     pergunta: 'Como acompanho a entrega?',
@@ -43,7 +43,7 @@ const FAQ = [
   {
     pergunta: 'Onde fica o histórico de notas fiscais?',
     resposta:
-      'Cada pedido entregue tem a nota fiscal anexada — abra o detalhe do pedido ' +
+      'Cada pedido entregue tem a nota fiscal anexada. Abra o detalhe do pedido ' +
       'na aba Pedidos para visualizá-la ou baixá-la.',
   },
 ];

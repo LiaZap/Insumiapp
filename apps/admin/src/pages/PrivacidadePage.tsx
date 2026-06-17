@@ -51,7 +51,7 @@ export function PrivacidadePage() {
 
         <Section title="4. Com quem compartilhamos">
           <List>
-            <li><b>Fornecedores de insumos:</b> recebem apenas os dados estritamente necessários para cotação e entrega — nome da clínica, endereço e itens pedidos. Nunca recebem dados financeiros ou de contato pessoal.</li>
+            <li><b>Fornecedores de insumos:</b> recebem apenas os dados estritamente necessários para cotação e entrega: nome da clínica, endereço e itens pedidos. Nunca recebem dados financeiros ou de contato pessoal.</li>
             <li><b>Provedores de infraestrutura:</b> hospedagem em servidores no Brasil e parceiros estritos de operação (banco de dados, envio de e-mail transacional).</li>
             <li><b>Autoridades públicas:</b> quando legalmente requisitado por ordem judicial ou exigência regulatória.</li>
           </List>
