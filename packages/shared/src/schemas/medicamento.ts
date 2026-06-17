@@ -1,13 +1,12 @@
 import { z } from 'zod';
 
-// Categorias extraídas do Figma (Busca de Medicamento 118:186)
+// Categorias do catálogo de insumos da clínica.
+// Foco em produtos cosméticos, descartáveis e materiais de uso geral.
 export const medicamentoCategoriaSchema = z.enum([
-  'preenchedores',
-  'bioestimuladores',
-  'neuromoduladores',
-  'anestesicos',
-  'corticoides',
-  'enzimas',
+  'estetica',
+  'higiene',
+  'descartaveis',
+  'material',
   'antissepticos',
   'solucoes',
   'insumos',
@@ -15,12 +14,10 @@ export const medicamentoCategoriaSchema = z.enum([
 export type MedicamentoCategoria = z.infer<typeof medicamentoCategoriaSchema>;
 
 export const CATEGORIA_LABEL: Record<MedicamentoCategoria, string> = {
-  preenchedores: 'Preenchedores',
-  bioestimuladores: 'Bioestimuladores',
-  neuromoduladores: 'Neuromoduladores',
-  anestesicos: 'Anestésicos',
-  corticoides: 'Corticoides',
-  enzimas: 'Enzimas',
+  estetica: 'Estética',
+  higiene: 'Higiene',
+  descartaveis: 'Descartáveis',
+  material: 'Material',
   antissepticos: 'Antissépticos',
   solucoes: 'Soluções',
   insumos: 'Insumos',

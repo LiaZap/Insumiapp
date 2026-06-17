@@ -36,7 +36,7 @@ const EMPTY: Form = {
   fabricante: '',
   apresentacao: '',
   dosagem: '',
-  categoria: 'preenchedores',
+  categoria: 'estetica',
   precoUnitario: '',
   receituario: false,
 };

@@ -28,43 +28,64 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
-// Catálogo extraído do Figma (Busca de Medicamento 118:186)
+// Catálogo "soft" — produtos cosméticos, descartáveis e materiais de uso geral.
+// Evita itens que possam preocupar revisores de app store (medicamentos
+// controlados, anestésicos, toxinas). Foco em estética e higiene.
 const medicamentosSeed = [
-  // Neuromoduladores
-  { nome: 'Botox', principioAtivo: 'Toxina Botulínica Tipo A', fabricante: 'Allergan', apresentacao: 'Frasco', dosagem: '100u', categoria: 'neuromoduladores', precoUnitario: 1850.0, receituario: true },
-  { nome: 'Dysport', principioAtivo: 'Toxina Botulínica Tipo A', fabricante: 'Ipsen', apresentacao: 'Frasco', dosagem: '500u', categoria: 'neuromoduladores', precoUnitario: 1490.0, receituario: true },
-  { nome: 'Xeomin', principioAtivo: 'Toxina Botulínica Tipo A', fabricante: 'Merz', apresentacao: 'Frasco', dosagem: '100u', categoria: 'neuromoduladores', precoUnitario: 1620.0, receituario: true },
+  // Estética — cosméticos
+  { nome: 'Esmalte Vermelho 9ml', fabricante: 'Risqué', apresentacao: 'Frasco', dosagem: '9ml', categoria: 'estetica', precoUnitario: 8.9 },
+  { nome: 'Esmalte Nude 9ml', fabricante: 'Risqué', apresentacao: 'Frasco', dosagem: '9ml', categoria: 'estetica', precoUnitario: 8.9 },
+  { nome: 'Esmalte Base Fortalecedora', fabricante: 'Risqué', apresentacao: 'Frasco', dosagem: '8ml', categoria: 'estetica', precoUnitario: 12.5 },
+  { nome: 'Removedor de Esmalte sem Acetona', fabricante: 'Granado', apresentacao: 'Frasco', dosagem: '100ml', categoria: 'estetica', precoUnitario: 9.9 },
+  { nome: 'Óleo de Cutícula', fabricante: 'Mãe Terra', apresentacao: 'Frasco', dosagem: '7ml', categoria: 'estetica', precoUnitario: 14.0 },
+  { nome: 'Creme Hidratante para Mãos', fabricante: 'Granado', apresentacao: 'Bisnaga', dosagem: '100g', categoria: 'estetica', precoUnitario: 22.0 },
+  { nome: 'Máscara Facial Hidratante', fabricante: 'Vult', apresentacao: 'Sachê', dosagem: '8g', categoria: 'estetica', precoUnitario: 18.0 },
 
-  // Bioestimuladores
-  { nome: 'Sculptra', principioAtivo: 'Ácido Poli-L-Láctico', fabricante: 'Galderma', apresentacao: 'Frasco', dosagem: '150mg', categoria: 'bioestimuladores', precoUnitario: 2150.0 },
-  { nome: 'Radiesse', principioAtivo: 'Hidroxiapatita de Cálcio', fabricante: 'Merz', apresentacao: 'Seringa', dosagem: '1.5ml', categoria: 'bioestimuladores', precoUnitario: 1980.0 },
-  { nome: 'Ellansé', principioAtivo: 'Policaprolactona', fabricante: 'Sinclair', apresentacao: 'Seringa', dosagem: '1ml', categoria: 'bioestimuladores', precoUnitario: 2750.0 },
+  // Higiene
+  { nome: 'Álcool em Gel 70%', fabricante: 'Asseptgel', apresentacao: 'Frasco', dosagem: '500ml', categoria: 'higiene', precoUnitario: 14.9 },
+  { nome: 'Sabonete Líquido Antibacteriano', fabricante: 'Asseptgel', apresentacao: 'Frasco', dosagem: '250ml', categoria: 'higiene', precoUnitario: 11.5 },
 
-  // Preenchedores
-  { nome: 'Juvederm Voluma', principioAtivo: 'Ácido Hialurônico', fabricante: 'Allergan', apresentacao: 'Seringa', dosagem: '1ml', categoria: 'preenchedores', precoUnitario: 1450.0 },
-  { nome: 'Restylane Lyft', principioAtivo: 'Ácido Hialurônico', fabricante: 'Galderma', apresentacao: 'Seringa', dosagem: '1ml', categoria: 'preenchedores', precoUnitario: 1380.0 },
-  { nome: 'Belotero Volume', principioAtivo: 'Ácido Hialurônico', fabricante: 'Merz', apresentacao: 'Seringa', dosagem: '1ml', categoria: 'preenchedores', precoUnitario: 1290.0 },
+  // Descartáveis
+  { nome: 'Luvas de Procedimento Tamanho M', fabricante: 'Descarpack', apresentacao: 'Caixa', dosagem: '100un', categoria: 'descartaveis', precoUnitario: 38.0 },
+  { nome: 'Luvas de Procedimento Tamanho P', fabricante: 'Descarpack', apresentacao: 'Caixa', dosagem: '100un', categoria: 'descartaveis', precoUnitario: 38.0 },
+  { nome: 'Máscara Cirúrgica Tripla', fabricante: 'Descarpack', apresentacao: 'Caixa', dosagem: '50un', categoria: 'descartaveis', precoUnitario: 19.9 },
+  { nome: 'Touca Descartável Sanfonada', fabricante: 'Descarpack', apresentacao: 'Pacote', dosagem: '100un', categoria: 'descartaveis', precoUnitario: 16.0 },
+  { nome: 'Avental Descartável TNT', fabricante: 'Descarpack', apresentacao: 'Pacote', dosagem: '10un', categoria: 'descartaveis', precoUnitario: 24.0 },
+  { nome: 'Lençol Descartável para Maca', fabricante: 'Descarpack', apresentacao: 'Rolo', dosagem: '50m', categoria: 'descartaveis', precoUnitario: 32.0 },
 
-  // Enzimas
-  { nome: 'Hialuronidase', principioAtivo: 'Hialuronidase', fabricante: 'Halex Istar', apresentacao: 'Frasco', dosagem: '1500u', categoria: 'enzimas', precoUnitario: 89.0, receituario: true },
-
-  // Anestésicos
-  { nome: 'EMLA', principioAtivo: 'Lidocaína + Prilocaína', fabricante: 'Astrazeneca', apresentacao: 'Bisnaga', dosagem: '30g', categoria: 'anestesicos', precoUnitario: 75.0 },
-  { nome: 'Dermomax', principioAtivo: 'Lidocaína', fabricante: 'Aché', apresentacao: 'Bisnaga', dosagem: '30g', categoria: 'anestesicos', precoUnitario: 58.0 },
+  // Material
+  { nome: 'Gaze Estéril 7,5x7,5cm', fabricante: 'Cremer', apresentacao: 'Pacote', dosagem: '10un', categoria: 'material', precoUnitario: 4.5 },
+  { nome: 'Algodão Hidrófilo', fabricante: 'Cremer', apresentacao: 'Pacote', dosagem: '100g', categoria: 'material', precoUnitario: 7.9 },
+  { nome: 'Cotonete Hastes Flexíveis', fabricante: 'Johnson', apresentacao: 'Caixa', dosagem: '75un', categoria: 'material', precoUnitario: 5.9 },
+  { nome: 'Espátula de Madeira', fabricante: 'Theoto', apresentacao: 'Pacote', dosagem: '100un', categoria: 'material', precoUnitario: 9.5 },
+  { nome: 'Toalha de Papel Descartável', fabricante: 'Scott', apresentacao: 'Pacote', dosagem: '100un', categoria: 'material', precoUnitario: 18.0 },
 
   // Antissépticos & Soluções
-  { nome: 'Clorexidina Alcoólica 0,5%', principioAtivo: 'Clorexidina', fabricante: 'Rioquímica', apresentacao: 'Frasco', dosagem: '100ml', categoria: 'antissepticos', precoUnitario: 18.5 },
-  { nome: 'Soro Fisiológico 0,9%', principioAtivo: 'NaCl 0,9%', fabricante: 'Equiplex', apresentacao: 'Frasco', dosagem: '500ml', categoria: 'solucoes', precoUnitario: 9.9 },
-
-  // Corticoides
-  { nome: 'Diprospan', principioAtivo: 'Betametasona', fabricante: 'Organon', apresentacao: 'Ampola', dosagem: '1ml', categoria: 'corticoides', precoUnitario: 42.0, receituario: true },
+  { nome: 'Clorexidina Aquosa 2%', fabricante: 'Rioquímica', apresentacao: 'Frasco', dosagem: '100ml', categoria: 'antissepticos', precoUnitario: 16.0 },
+  { nome: 'Soro Fisiológico 0,9%', fabricante: 'Equiplex', apresentacao: 'Frasco', dosagem: '500ml', categoria: 'solucoes', precoUnitario: 9.9 },
 
   // Insumos
-  { nome: 'Agulha 30G x 13mm', fabricante: 'BD', apresentacao: 'Caixa', dosagem: '100un', categoria: 'insumos', precoUnitario: 38.0 },
-  { nome: 'Seringa 1ml Luer Lock', fabricante: 'BD', apresentacao: 'Caixa', dosagem: '100un', categoria: 'insumos', precoUnitario: 95.0 },
+  { nome: 'Frasco Dosador 30ml', fabricante: 'Cralplast', apresentacao: 'Pacote', dosagem: '10un', categoria: 'insumos', precoUnitario: 14.0 },
+  { nome: 'Pote para Creme 50g', fabricante: 'Cralplast', apresentacao: 'Pacote', dosagem: '12un', categoria: 'insumos', precoUnitario: 22.0 },
 ];
 
 async function main() {
+  // Se o banco ainda tem catálogo antigo (medicamentos controlados), zera tudo
+  // que depende disso antes de cadastrar o catálogo novo.
+  const catalogoAntigo = await prisma.medicamento.findFirst({
+    where: { nome: { in: ['Botox', 'Dysport', 'Xeomin', 'EMLA', 'Dermomax'] } },
+  });
+  if (catalogoAntigo) {
+    await prisma.conta.deleteMany({ where: { pedidoId: { not: null } } });
+    await prisma.lance.deleteMany({});
+    await prisma.movimentacao.deleteMany({});
+    await prisma.pedidoItem.deleteMany({});
+    await prisma.pedido.deleteMany({});
+    await prisma.estoqueItem.deleteMany({});
+    await prisma.agrupamento.deleteMany({});
+    await prisma.medicamento.deleteMany({});
+  }
+
   for (const m of medicamentosSeed) {
     const exists = await prisma.medicamento.findFirst({
       where: { nome: m.nome, fabricante: m.fabricante ?? undefined },

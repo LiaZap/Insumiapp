@@ -28,8 +28,8 @@ export function TermosPage() {
         <Section title="1. O que é a Insumia">
           A Insumia é uma plataforma B2B (negócio-para-negócio) que conecta clínicas
           de estética à equipe Insumia para cotação, pedido e gestão de insumos
-          farmacêuticos e correlatos (toxinas botulínicas, preenchedores,
-          bioestimuladores, anestésicos, materiais e correlatos). A Insumia atua
+          e correlatos para procedimentos estéticos (cosméticos, materiais
+          descartáveis, antissépticos, soluções e instrumentais). A Insumia atua
           como intermediária comercial e prestadora de serviço de tecnologia. A
           venda e a entrega dos insumos são realizadas em conformidade com a
           legislação brasileira aplicável.

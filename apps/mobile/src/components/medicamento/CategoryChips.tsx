@@ -7,12 +7,10 @@ type CategoryChipsProps = {
 };
 
 const CATEGORIES: Array<MedicamentoCategoria> = [
-  'preenchedores',
-  'bioestimuladores',
-  'neuromoduladores',
-  'anestesicos',
-  'corticoides',
-  'enzimas',
+  'estetica',
+  'higiene',
+  'descartaveis',
+  'material',
   'antissepticos',
   'solucoes',
   'insumos',
