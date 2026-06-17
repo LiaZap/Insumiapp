@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Logo } from '../components/Logo';
 
-const EMAIL_SUPORTE = 'suporte@insumia.app';
-const WHATSAPP_NUMERO = '5511999999999'; // ajustar para o número real
-const WHATSAPP_DISPLAY = '+55 (11) 99999-9999';
+const EMAIL_SUPORTE = 'contato@bahtech.com.br';
+const WHATSAPP_NUMERO = '5551920044576';
+const WHATSAPP_DISPLAY = '+55 (51) 92004-4576';
 
 export function SuportePage() {
   const [nome, setNome] = useState('');
@@ -179,8 +179,8 @@ export function SuportePage() {
             </Faq>
             <Faq pergunta="Quero excluir minha conta. Como faço?">
               Envie um e-mail para{' '}
-              <a className="text-brand-500 underline" href="mailto:privacidade@insumia.app">
-                privacidade@insumia.app
+              <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
+                contato@bahtech.com.br
               </a>{' '}
               do mesmo endereço cadastrado, com o assunto “Excluir conta”. Confirmamos
               a exclusão em até 15 dias.

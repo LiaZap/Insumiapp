@@ -325,7 +325,7 @@ export default function PedidoDetalheScreen() {
                       const msg = encodeURIComponent(
                         `Receituário do pedido ${pedido.numero}`,
                       );
-                      Linking.openURL(`https://wa.me/5511999999999?text=${msg}`);
+                      Linking.openURL(`https://wa.me/5551920044576?text=${msg}`);
                     },
                   },
                 ],
@@ -362,7 +362,7 @@ export default function PedidoDetalheScreen() {
               const msg = encodeURIComponent(
                 `Olá, preciso de ajuda com o pedido ${pedido.numero}.`,
               );
-              Linking.openURL(`https://wa.me/5511999999999?text=${msg}`);
+              Linking.openURL(`https://wa.me/5551920044576?text=${msg}`);
             }}
             className="flex-row items-center justify-between py-3 active:opacity-70"
           >

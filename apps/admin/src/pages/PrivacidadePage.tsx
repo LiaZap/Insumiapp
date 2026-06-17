@@ -77,8 +77,8 @@ export function PrivacidadePage() {
             <li>Revogar o consentimento e excluir sua conta.</li>
           </List>
           Para exercer qualquer destes direitos, envie um e-mail para{' '}
-          <a className="text-brand-500 underline" href="mailto:privacidade@insumia.app">
-            privacidade@insumia.app
+          <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
+            contato@bahtech.com.br
           </a>{' '}
           identificando o seu pedido. Responderemos em até 15 dias.
         </Section>
@@ -106,8 +106,8 @@ export function PrivacidadePage() {
           Encarregado pelo Tratamento de Dados (DPO):<br />
           <b>BahTech Sistemas LTDA</b><br />
           E-mail:{' '}
-          <a className="text-brand-500 underline" href="mailto:privacidade@insumia.app">
-            privacidade@insumia.app
+          <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
+            contato@bahtech.com.br
           </a>
         </Section>
 

@@ -48,8 +48,8 @@ const FAQ = [
   },
 ];
 
-const WHATSAPP_NUMERO = '5511999999999'; // ajustar para o número real do suporte
-const EMAIL_SUPORTE = 'suporte@insumia.app';
+const WHATSAPP_NUMERO = '5551920044576';
+const EMAIL_SUPORTE = 'contato@bahtech.com.br';
 
 export default function AjudaScreen() {
   const router = useRouter();

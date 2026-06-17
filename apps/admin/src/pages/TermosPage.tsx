@@ -54,8 +54,8 @@ export function TermosPage() {
           senha) e por todas as atividades realizadas com a sua conta. Em caso de
           suspeita de acesso indevido, você deve nos avisar imediatamente pelo
           e-mail{' '}
-          <a className="text-brand-500 underline" href="mailto:suporte@insumia.app">
-            suporte@insumia.app
+          <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
+            contato@bahtech.com.br
           </a>.
         </Section>
 
@@ -175,8 +175,8 @@ export function TermosPage() {
           Dúvidas, sugestões ou notificações relativas a estes Termos:<br />
           <b>BahTech Sistemas LTDA</b><br />
           E-mail:{' '}
-          <a className="text-brand-500 underline" href="mailto:suporte@insumia.app">
-            suporte@insumia.app
+          <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
+            contato@bahtech.com.br
           </a>
         </Section>
 
