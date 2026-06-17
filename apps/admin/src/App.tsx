@@ -12,6 +12,7 @@ import { FinanceiroPage } from './pages/FinanceiroPage';
 import { CotarPublicoPage } from './pages/CotarPublicoPage';
 import { PrivacidadePage } from './pages/PrivacidadePage';
 import { SuportePage } from './pages/SuportePage';
+import { TermosPage } from './pages/TermosPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
@@ -26,6 +27,7 @@ export function App() {
       <Route path="/cotar/:token" element={<CotarPublicoPage />} />
       <Route path="/privacidade" element={<PrivacidadePage />} />
       <Route path="/suporte" element={<SuportePage />} />
+      <Route path="/termos" element={<TermosPage />} />
       <Route
         element={
           <RequireAuth>

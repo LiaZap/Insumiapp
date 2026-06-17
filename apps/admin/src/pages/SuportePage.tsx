@@ -191,6 +191,8 @@ export function SuportePage() {
         <footer className="mt-12 border-t border-black/5 pt-6 text-center text-xs text-ink-400">
           <a href="/privacidade" className="hover:text-ink-700">Política de Privacidade</a>
           <span className="mx-2">•</span>
+          <a href="/termos" className="hover:text-ink-700">Termos de Uso</a>
+          <span className="mx-2">•</span>
           <span>© 2026 BahTech Sistemas LTDA · Insumia</span>
         </footer>
       </main>
