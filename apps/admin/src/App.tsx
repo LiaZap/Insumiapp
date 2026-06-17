@@ -10,6 +10,7 @@ import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
 import { CotarPublicoPage } from './pages/CotarPublicoPage';
+import { PrivacidadePage } from './pages/PrivacidadePage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
@@ -20,8 +21,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      {/* Página pública — fornecedor dá lance sem login */}
+      {/* Páginas públicas — sem login */}
       <Route path="/cotar/:token" element={<CotarPublicoPage />} />
+      <Route path="/privacidade" element={<PrivacidadePage />} />
       <Route
         element={
           <RequireAuth>
