@@ -20,9 +20,9 @@ export function TermosPage() {
 
         <p className="mt-6 text-[15px] leading-relaxed text-ink-700">
           Estes Termos de Uso (“Termos”) regem o acesso e a utilização da plataforma
-          Insumia, oferecida por BahTech Sistemas LTDA (“Insumia”, “nós”). Ao criar
-          uma conta ou usar o app, você (“Cliente” ou “você”) concorda integralmente
-          com estes Termos. Se não concordar, não utilize a plataforma.
+          Insumia (“Insumia”, “nós”). Ao criar uma conta ou usar o app, você
+          (“Cliente” ou “você”) concorda integralmente com estes Termos. Se não
+          concordar, não utilize a plataforma.
         </p>
 
         <Section title="1. O que é a Insumia">
@@ -106,7 +106,7 @@ export function TermosPage() {
         <Section title="8. Propriedade intelectual">
           Todos os direitos sobre a plataforma Insumia — incluindo o código,
           design, marca, logotipos, textos, ilustrações e bases de dados — são de
-          titularidade exclusiva da BahTech Sistemas LTDA ou de seus licenciadores.
+          titularidade exclusiva da Insumia ou de seus licenciadores.
           Concedemos a você uma licença pessoal, limitada, não exclusiva e
           revogável para usar o app durante a vigência destes Termos. Você não
           adquire nenhum direito de propriedade sobre a plataforma.
@@ -173,7 +173,7 @@ export function TermosPage() {
 
         <Section title="16. Contato">
           Dúvidas, sugestões ou notificações relativas a estes Termos:<br />
-          <b>BahTech Sistemas LTDA</b><br />
+          <b>Insumia</b><br />
           E-mail:{' '}
           <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
             contato@bahtech.com.br
@@ -185,7 +185,7 @@ export function TermosPage() {
           <span className="mx-2">•</span>
           <a href="/suporte" className="hover:text-ink-700">Suporte</a>
           <span className="mx-2">•</span>
-          <span>© 2026 BahTech Sistemas LTDA · Insumia</span>
+          <span>© 2026 Insumia · Todos os direitos reservados</span>
         </footer>
       </main>
     </div>

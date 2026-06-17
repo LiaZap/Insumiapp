@@ -21,8 +21,7 @@ export function PrivacidadePage() {
         </p>
 
         <Section title="1. Quem somos">
-          A Insumia é uma plataforma B2B operada por BahTech Sistemas LTDA
-          (CNPJ a ser informado), com sede no Brasil. A plataforma conecta clínicas
+          A Insumia é uma plataforma B2B com sede no Brasil que conecta clínicas
           de estética à equipe Insumia para cotação, pedido e gestão de insumos
           estéticos e farmacêuticos.
         </Section>
@@ -104,7 +103,7 @@ export function PrivacidadePage() {
 
         <Section title="10. Contato">
           Encarregado pelo Tratamento de Dados (DPO):<br />
-          <b>BahTech Sistemas LTDA</b><br />
+          <b>Insumia</b><br />
           E-mail:{' '}
           <a className="text-brand-500 underline" href="mailto:contato@bahtech.com.br">
             contato@bahtech.com.br
@@ -116,7 +115,7 @@ export function PrivacidadePage() {
           <span className="mx-2">•</span>
           <a href="/suporte" className="hover:text-ink-700">Suporte</a>
           <span className="mx-2">•</span>
-          <span>© 2026 BahTech Sistemas LTDA · Insumia</span>
+          <span>© 2026 Insumia · Todos os direitos reservados</span>
         </footer>
       </main>
     </div>

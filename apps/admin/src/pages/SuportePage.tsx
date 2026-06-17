@@ -193,7 +193,7 @@ export function SuportePage() {
           <span className="mx-2">•</span>
           <a href="/termos" className="hover:text-ink-700">Termos de Uso</a>
           <span className="mx-2">•</span>
-          <span>© 2026 BahTech Sistemas LTDA · Insumia</span>
+          <span>© 2026 Insumia · Todos os direitos reservados</span>
         </footer>
       </main>
     </div>
