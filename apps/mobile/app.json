@@ -16,8 +16,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.insumia.app",
+      "requireFullScreen": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true,
+        "UIDeviceFamily": [1]
       }
     },
     "android": {
