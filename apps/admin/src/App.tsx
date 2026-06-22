@@ -10,6 +10,7 @@ import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
 import { UsuariosPage } from './pages/UsuariosPage';
+import { RecuperarPage } from './pages/RecuperarPage';
 import { CotarPublicoPage } from './pages/CotarPublicoPage';
 import { PrivacidadePage } from './pages/PrivacidadePage';
 import { SuportePage } from './pages/SuportePage';
@@ -29,6 +30,7 @@ export function App() {
       <Route path="/privacidade" element={<PrivacidadePage />} />
       <Route path="/suporte" element={<SuportePage />} />
       <Route path="/termos" element={<TermosPage />} />
+      <Route path="/recuperar" element={<RecuperarPage />} />
       <Route
         element={
           <RequireAuth>

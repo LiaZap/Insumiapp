@@ -1,14 +1,19 @@
 import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import type { LoginInput, SignupInput, User as SharedUser } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from './email.service';
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly email: EmailService,
   ) {}
 
   /** E-mail é case-insensitive — normaliza para evitar falha por maiúscula/espaço. */
@@ -47,6 +52,54 @@ export class AuthService {
 
   private signToken(userId: string): string {
     return this.jwt.sign({ sub: userId });
+  }
+
+  /**
+   * Gera token de reset e envia e-mail. Responde sem revelar se o e-mail
+   * existe (boa prática de segurança).
+   */
+  async forgotPassword(emailInput: string): Promise<void> {
+    const email = this.normalizeEmail(emailInput);
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || user.bloqueado) return; // silencioso
+
+    // Invalida tokens anteriores ainda válidos
+    await this.prisma.passwordReset.updateMany({
+      where: { userId: user.id, used: false, expiresAt: { gt: new Date() } },
+      data: { used: true },
+    });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+    await this.prisma.passwordReset.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+
+    const baseUrl = process.env.APP_BASE_URL ?? 'https://insumiaapp.bahflash.tech';
+    const link = `${baseUrl}/recuperar?token=${token}`;
+    await this.email.enviarReset({ para: user.email, nome: user.nome, link });
+  }
+
+  /** Valida o token e troca a senha. */
+  async resetPassword(token: string, novaSenha: string): Promise<void> {
+    const record = await this.prisma.passwordReset.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+    if (!record || record.used || record.expiresAt < new Date()) {
+      throw new UnauthorizedException('Link inválido ou expirado. Solicite um novo.');
+    }
+    const passwordHash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordReset.update({
+        where: { id: record.id },
+        data: { used: true },
+      }),
+    ]);
   }
 
   /**
