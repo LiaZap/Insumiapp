@@ -1,27 +1,16 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
 import {
   buscaMedicamentoSchema,
-  medicamentoCategoriaSchema,
+  upsertMedicamentoSchema,
   type BuscaMedicamentoInput,
+  type UpsertMedicamentoInput,
 } from '@insumia/shared';
 import { MedicamentosService } from './medicamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { AdminGuard } from '../common/admin.guard';
 
-const upsertMedicamentoSchema = z.object({
-  nome: z.string().min(2),
-  principioAtivo: z.string().optional().nullable(),
-  fabricante: z.string().optional().nullable(),
-  apresentacao: z.string().optional().nullable(),
-  dosagem: z.string().optional().nullable(),
-  categoria: medicamentoCategoriaSchema,
-  precoUnitario: z.number().nonnegative(),
-  ean: z.string().optional().nullable(),
-  receituario: z.boolean().optional(),
-});
-type UpsertMedicamento = z.infer<typeof upsertMedicamentoSchema>;
+type UpsertMedicamento = UpsertMedicamentoInput;
 
 @ApiTags('medicamentos')
 @Controller('medicamentos')

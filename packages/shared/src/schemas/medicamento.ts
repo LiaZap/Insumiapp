@@ -36,8 +36,26 @@ export const medicamentoSchema = z.object({
   ean: z.string().nullable(),
   receituario: z.boolean().default(false),
   imagemUrl: z.string().url().nullable(),
+  ativo: z.boolean().optional(),
 });
 export type Medicamento = z.infer<typeof medicamentoSchema>;
+
+// Criar/editar medicamento no back-office (fonte única — API valida, form usa).
+export const upsertMedicamentoSchema = z.object({
+  nome: z.string().min(2),
+  principioAtivo: z.string().optional().nullable(),
+  fabricante: z.string().optional().nullable(),
+  apresentacao: z.string().optional().nullable(),
+  dosagem: z.string().optional().nullable(),
+  categoria: medicamentoCategoriaSchema,
+  precoUnitario: z.number().nonnegative(),
+  custo: z.number().nonnegative().optional().nullable(),
+  ean: z.string().optional().nullable(),
+  receituario: z.boolean().optional(),
+  imagemUrl: z.string().url().optional().nullable(),
+  ativo: z.boolean().optional(),
+});
+export type UpsertMedicamentoInput = z.infer<typeof upsertMedicamentoSchema>;
 
 export const buscaMedicamentoSchema = z.object({
   q: z.string().optional(),
