@@ -307,23 +307,23 @@ export default function PedidoDetalheScreen() {
           ))}
         </Section>
 
-        {/* Receituário */}
-        <Section icon="file-check-bold-duotone" title="Receituário">
+        {/* Documentos do pedido */}
+        <Section icon="file-check-bold-duotone" title="Documentos do pedido">
           <Text className="text-sm text-ink-500">
-            Precisamos das receitas para efetuar seu pedido
+            Se algum item exigir documentação, anexe aqui para agilizar o pedido.
           </Text>
           <Pressable
             onPress={() =>
               Alert.alert(
-                'Enviar receituário',
-                'Envie a foto ou PDF do receituário pelo WhatsApp da Insumia para liberar o pedido.',
+                'Enviar documento',
+                'Envie a foto ou PDF do documento pelo WhatsApp da Insumia para anexar ao pedido.',
                 [
                   { text: 'Fechar', style: 'cancel' },
                   {
                     text: 'Abrir WhatsApp',
                     onPress: () => {
                       const msg = encodeURIComponent(
-                        `Receituário do pedido ${pedido.numero}`,
+                        `Documento do pedido ${pedido.numero}`,
                       );
                       Linking.openURL(`https://wa.me/5551920044576?text=${msg}`);
                     },
@@ -333,7 +333,7 @@ export default function PedidoDetalheScreen() {
             }
             className="mt-3 h-11 items-center justify-center rounded-pill bg-brand-50 active:opacity-80"
           >
-            <Text className="font-semibold text-sm text-brand-500">Enviar Receituário</Text>
+            <Text className="font-semibold text-sm text-brand-500">Enviar Documento</Text>
           </Pressable>
         </Section>
 

@@ -77,7 +77,7 @@ export default function BuscaScreen() {
               <View className="items-center justify-center py-16">
                 <SolarIcon name="search-linear" size={40} color="#B3B3B3" />
                 <Text className="mt-3 text-sm text-ink-500">
-                  {debouncedQ || categoria ? 'Nada encontrado' : 'Carregue medicamentos da API'}
+                  {debouncedQ || categoria ? 'Nada encontrado' : 'Nenhum produto disponível no momento'}
                 </Text>
               </View>
             }

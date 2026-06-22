@@ -17,15 +17,15 @@ const FAQ = [
   {
     pergunta: 'Como funciona a compra coletiva?',
     resposta:
-      'Pedidos de várias clínicas para o mesmo medicamento são agrupados. ' +
+      'Pedidos de várias clínicas para o mesmo produto são agrupados. ' +
       'A Insumia leva esse volume aos fornecedores e consegue preços melhores, ' +
       'que são repassados a cada clínica do grupo.',
   },
   {
-    pergunta: 'Preciso enviar receituário para todos os medicamentos?',
+    pergunta: 'Preciso enviar algum documento junto com o pedido?',
     resposta:
-      'Apenas para medicamentos controlados (toxinas, anestésicos, etc.). ' +
-      'O app indica quais itens exigem receituário antes do envio do pedido.',
+      'Na maioria dos itens, não. Quando algum produto exigir documentação ' +
+      'específica, o app sinaliza antes do envio e você anexa pelo detalhe do pedido.',
   },
   {
     pergunta: 'Posso recusar uma cotação?',
