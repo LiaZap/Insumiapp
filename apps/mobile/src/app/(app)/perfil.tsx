@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { SolarIcon } from '@/components/icons/SolarIcon';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/auth.store';
+import { useDeleteAccount } from '@/features/auth/auth.hooks';
 import { colors } from '@/theme/tokens';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -19,6 +20,7 @@ export default function PerfilScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const deleteAccount = useDeleteAccount();
 
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
@@ -47,6 +49,49 @@ export default function PerfilScreen() {
     setNome(user?.nome ?? '');
     setEmpresa(user?.empresa ?? '');
     setEditing(false);
+  };
+
+  // Fluxo de exclusao definitiva da conta (App Store guideline 5.1.1(v)).
+  // Duas confirmacoes para evitar exclusao acidental.
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Excluir minha conta?',
+      'Esta acao apaga em definitivo sua conta, seus pedidos, seu estoque e todo o historico vinculado. Nao e possivel desfazer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Tem certeza?',
+              'Toque em "Excluir agora" para apagar sua conta. Voce sera deslogado.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Excluir agora',
+                  style: 'destructive',
+                  onPress: () => {
+                    deleteAccount.mutate(undefined, {
+                      onSuccess: () => {
+                        Alert.alert('Conta excluida', 'Sua conta e seus dados foram apagados.');
+                        router.replace('/login');
+                      },
+                      onError: () => {
+                        Alert.alert(
+                          'Nao foi possivel excluir',
+                          'Tente novamente em alguns instantes. Se o problema persistir, contato@bahtech.com.br.',
+                        );
+                      },
+                    });
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -113,6 +158,31 @@ export default function PerfilScreen() {
           <SectionRow icon="bell-linear" label="Notificações" onPress={() => router.push('/notificacoes')} />
           <SectionRow icon="map-point-bold" label="Endereços" onPress={() => router.push('/enderecos')} />
           <SectionRow icon="file-check-bold-duotone" label="Ajuda e suporte" onPress={() => router.push('/ajuda')} />
+        </View>
+
+        {/* Zona de perigo — excluir conta (App Store guideline 5.1.1(v)) */}
+        <View className="mt-10">
+          <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+            Zona de perigo
+          </Text>
+          <Pressable
+            onPress={handleDeleteAccount}
+            disabled={deleteAccount.isPending}
+            className="flex-row items-center gap-3 rounded-card bg-white px-4 py-4 active:opacity-80"
+            style={{ borderWidth: 1, borderColor: '#FEE2E2' }}
+          >
+            <View className="h-10 w-10 items-center justify-center rounded-icon bg-red-50">
+              <SolarIcon name="inbox-linear" size={20} color="#DC2626" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-base text-danger">
+                {deleteAccount.isPending ? 'Excluindo...' : 'Excluir minha conta'}
+              </Text>
+              <Text className="mt-0.5 text-xs text-ink-500">
+                Apaga conta, pedidos, estoque e histórico em definitivo.
+              </Text>
+            </View>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

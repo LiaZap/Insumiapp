@@ -46,6 +46,22 @@ export class AuthService {
     return this.jwt.sign({ sub: userId });
   }
 
+  /**
+   * Exclusão definitiva: remove a conta do usuário e todos os dados vinculados.
+   * Exigência da App Store (Guideline 5.1.1(v)) — o usuário precisa poder
+   * iniciar a exclusão pelo próprio app, sem depender de contato externo.
+   */
+  async deleteAccount(usuarioId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.conta.deleteMany({ where: { pedido: { usuarioId } } });
+      await tx.pedidoItem.deleteMany({ where: { pedido: { usuarioId } } });
+      await tx.pedido.deleteMany({ where: { usuarioId } });
+      await tx.movimentacao.deleteMany({ where: { usuarioId } });
+      await tx.estoqueItem.deleteMany({ where: { usuarioId } });
+      await tx.user.delete({ where: { id: usuarioId } });
+    });
+  }
+
   private toSharedUser(u: {
     id: string;
     nome: string;

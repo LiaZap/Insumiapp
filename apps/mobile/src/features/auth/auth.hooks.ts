@@ -39,4 +39,13 @@ export function useSignup() {
   });
 }
 
+export function useDeleteAccount() {
+  const clearSession = useAuthStore((s) => s.clearSession);
+  return useMutation({
+    mutationFn: () => authApi.deleteAccount(),
+    onSuccess: () => clearSession(),
+    onError: extractMessage,
+  });
+}
+
 export { extractMessage as extractAuthErrorMessage };
