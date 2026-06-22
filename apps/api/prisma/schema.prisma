@@ -64,10 +64,24 @@ model User {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  pedidos       Pedido[]
-  movimentacoes Movimentacao[]
-  estoqueItens  EstoqueItem[]
+  pedidos        Pedido[]
+  movimentacoes  Movimentacao[]
+  estoqueItens   EstoqueItem[]
   passwordResets PasswordReset[]
+  pushTokens     PushToken[]
+}
+
+model PushToken {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  plataforma   String   // ios | android
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model PasswordReset {

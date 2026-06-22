@@ -2,6 +2,18 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { CriarPedidoInput, EnviarCotacaoInput, PedidoStatus } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgrupamentosService } from '../agrupamentos/agrupamentos.service';
+import { PushService } from '../push/push.service';
+
+const STATUS_PUSH_LABEL: Record<PedidoStatus, string | null> = {
+  rascunho: null,
+  aguardando_cotacao: null,
+  cotado: 'Cotação recebida — revise e aprove no app.',
+  confirmado: 'Pedido aprovado, vamos preparar o envio.',
+  em_separacao: 'Seu pedido está sendo separado.',
+  enviado: 'Pedido a caminho da clínica.',
+  entregue: 'Pedido entregue. Confira a nota fiscal no app.',
+  cancelado: 'Pedido cancelado.',
+};
 
 const PEDIDO_INCLUDE = {
   itens: { include: { medicamento: true } },
@@ -10,7 +22,27 @@ const PEDIDO_INCLUDE = {
 
 @Injectable()
 export class PedidosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
+
+  /** Dispara push de atualização de status pro dono do pedido. */
+  private async notificar(pedidoId: string, status: PedidoStatus): Promise<void> {
+    const msg = STATUS_PUSH_LABEL[status];
+    if (!msg) return;
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      select: { usuarioId: true, numero: true },
+    });
+    if (!pedido) return;
+    await this.push.enviarParaUsuario(
+      pedido.usuarioId,
+      `Pedido ${pedido.numero}`,
+      msg,
+      { tipo: 'pedido', pedidoId },
+    );
+  }
 
   async list(usuarioId: string) {
     return this.prisma.pedido.findMany({
@@ -36,7 +68,7 @@ export class PedidosService {
   async atualizarStatus(id: string, status: PedidoStatus) {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido não encontrado');
-    return this.prisma.pedido.update({
+    const atualizado = await this.prisma.pedido.update({
       where: { id },
       data: { status },
       include: {
@@ -44,6 +76,8 @@ export class PedidosService {
         usuario: { select: { id: true, nome: true, empresa: true, email: true } },
       },
     });
+    await this.notificar(id, status);
+    return atualizado;
   }
 
   async findById(id: string) {
@@ -129,6 +163,7 @@ export class PedidosService {
       });
     });
 
+    await this.notificar(id, 'cotado');
     return this.findById(id);
   }
 

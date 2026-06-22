@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PedidosController } from './pedidos.controller';
 import { PedidosService } from './pedidos.service';
 import { AuthGuard } from '../common/auth.guard';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthGuard } from '../common/auth.guard';
         secret: cfg.get<string>('JWT_SECRET', 'dev-secret'),
       }),
     }),
+    PushModule,
   ],
   controllers: [PedidosController],
   providers: [PedidosService, AuthGuard],

@@ -3,6 +3,7 @@ import type { AxiosError } from 'axios';
 import type { LoginInput, SignupInput } from '@insumia/shared';
 import { authApi } from './auth.api';
 import { useAuthStore } from './auth.store';
+import { registrarPushNotifications } from '@/lib/push';
 
 type ApiError = AxiosError<{ message?: string }>;
 
@@ -23,8 +24,10 @@ export function useLogin() {
   const setSession = useAuthStore((s) => s.setSession);
   return useMutation({
     mutationFn: (dto: LoginInput) => authApi.login(dto),
-    onSuccess: ({ user, accessToken, refreshToken }) =>
-      setSession(user, accessToken, refreshToken ?? accessToken),
+    onSuccess: async ({ user, accessToken, refreshToken }) => {
+      await setSession(user, accessToken, refreshToken ?? accessToken);
+      void registrarPushNotifications();
+    },
     onError: extractMessage,
   });
 }
@@ -33,8 +36,10 @@ export function useSignup() {
   const setSession = useAuthStore((s) => s.setSession);
   return useMutation({
     mutationFn: (dto: SignupInput) => authApi.signup(dto),
-    onSuccess: ({ user, accessToken, refreshToken }) =>
-      setSession(user, accessToken, refreshToken ?? accessToken),
+    onSuccess: async ({ user, accessToken, refreshToken }) => {
+      await setSession(user, accessToken, refreshToken ?? accessToken);
+      void registrarPushNotifications();
+    },
     onError: extractMessage,
   });
 }
