@@ -28,6 +28,33 @@ export function CotacaoForm({ pedido, onDone }: { pedido: Pedido; onDone: () => 
   const setItem = (id: string, patch: Partial<ItemState>) =>
     setItens((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
 
+  /** Aplica margem fixa sobre o custo de cada item (default 30%). */
+  const aplicarMargem = (margemPercentual: number) => {
+    setItens((s) => {
+      const next = { ...s };
+      for (const it of pedido.itens) {
+        const custo = Number(it.medicamento.custo ?? it.medicamento.precoUnitario);
+        if (!custo) continue;
+        const preco = custo * (1 + margemPercentual / 100);
+        next[it.id] = {
+          ...next[it.id]!,
+          precoUnitario: preco.toFixed(2).replace('.', ','),
+        };
+      }
+      return next;
+    });
+  };
+
+  const marcarTodos = (disponivel: boolean) => {
+    setItens((s) => {
+      const next = { ...s };
+      for (const id of Object.keys(next)) next[id] = { ...next[id]!, disponivel };
+      return next;
+    });
+  };
+
+  const itensDisponiveis = Object.values(itens).filter((i) => i.disponivel).length;
+
   const resumo = useMemo(() => {
     let total = 0;
     let custo = 0;
@@ -71,6 +98,47 @@ export function CotacaoForm({ pedido, onDone }: { pedido: Pedido; onDone: () => 
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
         Montar cotação
       </p>
+
+      {/* Atalhos */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-white px-3 py-2">
+        <span className="text-[11px] font-semibold text-ink-500">Atalhos:</span>
+        <button
+          type="button"
+          onClick={() => aplicarMargem(20)}
+          className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
+        >
+          Margem 20%
+        </button>
+        <button
+          type="button"
+          onClick={() => aplicarMargem(30)}
+          className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
+        >
+          Margem 30%
+        </button>
+        <button
+          type="button"
+          onClick={() => aplicarMargem(40)}
+          className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
+        >
+          Margem 40%
+        </button>
+        <span className="text-ink-300">|</span>
+        <button
+          type="button"
+          onClick={() => marcarTodos(true)}
+          className="rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 hover:bg-green-100"
+        >
+          Tudo disponível
+        </button>
+        <button
+          type="button"
+          onClick={() => marcarTodos(false)}
+          className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+        >
+          Tudo indisponível
+        </button>
+      </div>
 
       {/* Itens */}
       <div className="space-y-2">
@@ -171,10 +239,14 @@ export function CotacaoForm({ pedido, onDone }: { pedido: Pedido; onDone: () => 
 
       <button
         onClick={() => enviar.mutate()}
-        disabled={enviar.isPending}
+        disabled={enviar.isPending || itensDisponiveis === 0}
         className="mt-3 w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
       >
-        {enviar.isPending ? 'Enviando...' : 'Enviar cotação ao cliente'}
+        {enviar.isPending
+          ? 'Enviando...'
+          : itensDisponiveis === 0
+          ? 'Marque ao menos um item disponível'
+          : `Enviar cotação ao cliente (${itensDisponiveis} ${itensDisponiveis === 1 ? 'item' : 'itens'})`}
       </button>
     </div>
   );
