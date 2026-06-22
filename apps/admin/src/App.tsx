@@ -9,6 +9,7 @@ import { FornecedoresPage } from './pages/FornecedoresPage';
 import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
+import { UsuariosPage } from './pages/UsuariosPage';
 import { CotarPublicoPage } from './pages/CotarPublicoPage';
 import { PrivacidadePage } from './pages/PrivacidadePage';
 import { SuportePage } from './pages/SuportePage';
@@ -42,6 +43,7 @@ export function App() {
         <Route path="/medicamentos" element={<MedicamentosPage />} />
         <Route path="/estoque" element={<EstoquePage />} />
         <Route path="/financeiro" element={<FinanceiroPage />} />
+        <Route path="/usuarios" element={<UsuariosPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -60,6 +60,7 @@ model User {
   passwordHash String
   empresa      String?
   role         UserRole @default(comprador)
+  bloqueado    Boolean  @default(false)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 

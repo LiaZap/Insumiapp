@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import type { LoginInput, SignupInput, User as SharedUser } from '@insumia/shared';
@@ -39,6 +39,9 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas');
+    if (user.bloqueado) {
+      throw new ForbiddenException('Conta bloqueada. Entre em contato com o suporte.');
+    }
     return { user: this.toSharedUser(user), accessToken: this.signToken(user.id) };
   }
 

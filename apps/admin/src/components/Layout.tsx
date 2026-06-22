@@ -11,6 +11,7 @@ const NAV = [
   { to: '/medicamentos', label: 'Catálogo', icon: '✚' },
   { to: '/estoque', label: 'Estoque', icon: '▦' },
   { to: '/financeiro', label: 'Financeiro', icon: '$' },
+  { to: '/usuarios', label: 'Clientes', icon: '◉' },
 ];
 
 function currentPageLabel(path: string): string {

@@ -10,6 +10,7 @@ import { AgrupamentosModule } from './agrupamentos/agrupamentos.module';
 import { FornecedoresModule } from './fornecedores/fornecedores.module';
 import { EstoqueModule } from './estoque/estoque.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FinanceiroModule } from './financeiro/financeiro.module';
     FornecedoresModule,
     EstoqueModule,
     FinanceiroModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
