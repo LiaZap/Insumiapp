@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -23,23 +24,26 @@ export class AuthGuard implements CanActivate {
     if (!auth || !auth.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token ausente');
     }
-    const token = auth.slice(7);
+
+    let sub: string;
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: string; role?: string }>(token);
-      let role = payload.role;
-      // Token antigo (emitido antes do role no JWT): resolve do banco. Transição
-      // self-healing — some sozinho conforme os tokens expiram e são reemitidos.
-      if (!role) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: payload.sub },
-          select: { role: true },
-        });
-        role = user?.role ?? 'comprador';
-      }
-      req.user = { id: payload.sub, role };
-      return true;
+      const payload = await this.jwt.verifyAsync<{ sub: string }>(auth.slice(7));
+      sub = payload.sub;
     } catch {
       throw new UnauthorizedException('Token inválido');
     }
+
+    // Autoritativo pelo banco: garante revogação imediata (usuário excluído →
+    // 401; bloqueado → 403) e role sempre fresca. Sem isto, um token de 7 dias
+    // mantém acesso mesmo após bloqueio/rebaixamento/exclusão.
+    const user = await this.prisma.user.findUnique({
+      where: { id: sub },
+      select: { id: true, role: true, bloqueado: true },
+    });
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    if (user.bloqueado) throw new ForbiddenException('Conta bloqueada');
+
+    req.user = { id: user.id, role: user.role };
+    return true;
   }
 }

@@ -90,13 +90,17 @@ export class UsersService {
       await tx.movimentacao.deleteMany({ where: { usuarioId: targetId } });
       await tx.estoqueItem.deleteMany({ where: { usuarioId: targetId } });
       await tx.user.delete({ where: { id: targetId } });
-    });
-    await this.audit.registrar({
-      atorId: requesterId,
-      acao: 'user.delete',
-      entidade: 'User',
-      entidadeId: targetId,
-      antes: { nome: target.nome, email: target.email, role: target.role },
+      // Auditoria atômica: exclusão irreversível não pode ficar sem trilha.
+      await this.audit.registrar(
+        {
+          atorId: requesterId,
+          acao: 'user.delete',
+          entidade: 'User',
+          entidadeId: targetId,
+          antes: { nome: target.nome, email: target.email, role: target.role },
+        },
+        tx,
+      );
     });
   }
 }

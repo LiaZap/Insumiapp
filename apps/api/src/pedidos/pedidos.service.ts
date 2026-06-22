@@ -240,7 +240,8 @@ export class PedidosService {
   async aceitarCotacao(id: string, usuarioId: string) {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido não encontrado');
-    if (pedido.usuarioId !== usuarioId) throw new BadRequestException('Pedido de outro usuário');
+    // 404 (não 400) para não revelar a existência de pedidos de outras clínicas.
+    if (pedido.usuarioId !== usuarioId) throw new NotFoundException('Pedido não encontrado');
     if (pedido.status !== 'cotado') throw new BadRequestException('Pedido não está cotado');
     if (pedido.cotacaoValidaAte && pedido.cotacaoValidaAte < new Date()) {
       throw new BadRequestException('Cotação expirada');
@@ -256,7 +257,8 @@ export class PedidosService {
   async recusarCotacao(id: string, usuarioId: string) {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido não encontrado');
-    if (pedido.usuarioId !== usuarioId) throw new BadRequestException('Pedido de outro usuário');
+    // 404 (não 400) para não revelar a existência de pedidos de outras clínicas.
+    if (pedido.usuarioId !== usuarioId) throw new NotFoundException('Pedido não encontrado');
     if (pedido.status !== 'cotado') throw new BadRequestException('Pedido não está cotado');
     await this.prisma.$transaction(async (tx) => {
       await tx.pedido.update({
