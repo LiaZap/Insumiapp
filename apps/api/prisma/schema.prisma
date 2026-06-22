@@ -88,6 +88,7 @@ model User {
   enderecos      Endereco[]
   notificacoes   Notificacao[]
   auditLogs      AuditLog[]
+  contas         Conta[]
 }
 
 model PushToken {
@@ -299,14 +300,17 @@ model Conta {
   status       ContaStatus @default(aberta)
   pagoEm       DateTime?
   pedidoId     String?
+  usuarioId    String? // dono da conta (clínica) — escopo multi-tenant
   criadoEm     DateTime    @default(now())
   atualizadoEm DateTime    @updatedAt
 
-  pedido Pedido? @relation(fields: [pedidoId], references: [id])
+  pedido  Pedido? @relation(fields: [pedidoId], references: [id])
+  usuario User?   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([vencimento])
   @@index([pedidoId])
+  @@index([usuarioId])
 }
 
 model Endereco {

@@ -244,6 +244,7 @@ async function main() {
           valor: total,
           vencimento: venc,
           pedidoId: pedido.id,
+          usuarioId: cliente.id,
           status: contaPaga ? 'paga' : 'aberta',
           pagoEm: contaPaga ? new Date(venc.getTime() - 86400000) : null,
         },

@@ -213,11 +213,11 @@ export function EstoquePage() {
 
   const estoque = useQuery({
     queryKey: ['estoque'],
-    queryFn: async () => (await api.get<EstoqueResumo[]>('/api/v1/estoque')).data,
+    queryFn: async () => (await api.get<EstoqueResumo[]>('/api/v1/estoque?escopo=todos')).data,
   });
   const movs = useQuery({
     queryKey: ['movimentacoes'],
-    queryFn: async () => (await api.get<Movimentacao[]>('/api/v1/estoque/movimentacoes')).data,
+    queryFn: async () => (await api.get<Movimentacao[]>('/api/v1/estoque/movimentacoes?escopo=todos')).data,
     enabled: tab === 'movimentacoes',
   });
 

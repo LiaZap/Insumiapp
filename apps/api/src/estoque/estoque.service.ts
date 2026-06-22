@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import {
   DIAS_ALERTA_VALIDADE,
   type CriarMovimentacaoInput,
@@ -8,6 +9,8 @@ import {
 } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
+type EstoqueItemComMed = Prisma.EstoqueItemGetPayload<{ include: { medicamento: true } }>;
+
 const TIPOS_SAIDA = new Set(['saida', 'perda', 'transferencia']);
 const MS_DIA = 86_400_000;
 
@@ -15,13 +18,25 @@ const MS_DIA = 86_400_000;
 export class EstoqueService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Estoque da clínica logada. */
   async listarResumo(usuarioId: string): Promise<EstoqueResumo[]> {
-    // Agrega EstoqueItem por medicamentoId (somando lotes) — só da clínica logada
     const items = await this.prisma.estoqueItem.findMany({
       where: { usuarioId },
       include: { medicamento: true },
     });
+    return this.agregarResumo(items);
+  }
 
+  /** Visão consolidada da operação — soma o estoque de TODAS as clínicas. */
+  async listarConsolidado(): Promise<EstoqueResumo[]> {
+    const items = await this.prisma.estoqueItem.findMany({
+      include: { medicamento: true },
+    });
+    return this.agregarResumo(items);
+  }
+
+  /** Agrega EstoqueItem por medicamentoId (somando lotes/clínicas) → resumo + FEFO. */
+  private agregarResumo(items: EstoqueItemComMed[]): EstoqueResumo[] {
     // lote mais próximo de vencer por medicamento (FEFO)
     const proxValidade = new Map<string, { validade: Date; lote: string | null }>();
     for (const item of items) {
@@ -74,9 +89,10 @@ export class EstoqueService {
     );
   }
 
-  async listarMovimentacoes(usuarioId: string) {
+  /** Movimentações da clínica, ou de toda a operação quando `usuarioId` é omitido. */
+  async listarMovimentacoes(usuarioId?: string) {
     return this.prisma.movimentacao.findMany({
-      where: { usuarioId },
+      where: usuarioId ? { usuarioId } : undefined,
       orderBy: { criadoEm: 'desc' },
       include: {
         medicamento: true,

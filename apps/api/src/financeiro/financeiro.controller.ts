@@ -18,27 +18,33 @@ export class FinanceiroController {
   constructor(private readonly fin: FinanceiroService) {}
 
   @Get('contas')
-  list(@Query(new ZodValidationPipe(buscaContaSchema)) q: BuscaContaInput) {
-    return this.fin.listar(q);
+  list(
+    @Req() req: AuthRequest,
+    @Query(new ZodValidationPipe(buscaContaSchema)) q: BuscaContaInput,
+  ) {
+    return this.fin.listar(q, req.user);
   }
 
   @Post('contas')
-  create(@Body(new ZodValidationPipe(criarContaSchema)) dto: CriarContaInput) {
-    return this.fin.criar(dto);
+  create(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(criarContaSchema)) dto: CriarContaInput,
+  ) {
+    return this.fin.criar(dto, req.user.id);
   }
 
   @Patch('contas/:id/pagar')
   pagar(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.fin.marcarPaga(id, req.user.id);
+    return this.fin.marcarPaga(id, req.user);
   }
 
   @Patch('contas/:id/cancelar')
   cancelar(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.fin.cancelar(id, req.user.id);
+    return this.fin.cancelar(id, req.user);
   }
 
   @Get('dashboard')
-  dashboard() {
-    return this.fin.dashboard();
+  dashboard(@Req() req: AuthRequest) {
+    return this.fin.dashboard(req.user);
   }
 }

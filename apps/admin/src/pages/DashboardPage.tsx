@@ -81,7 +81,7 @@ export function DashboardPage() {
   });
   const estoqueQ = useQuery({
     queryKey: ['estoque'],
-    queryFn: async () => (await api.get<EstoqueResumo[]>('/api/v1/estoque')).data,
+    queryFn: async () => (await api.get<EstoqueResumo[]>('/api/v1/estoque?escopo=todos')).data,
   });
 
   const loading = pedidosQ.isLoading || finQ.isLoading || estoqueQ.isLoading;

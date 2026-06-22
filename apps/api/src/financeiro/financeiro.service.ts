@@ -10,11 +10,27 @@ export class FinanceiroService {
     private readonly audit: AuditService,
   ) {}
 
-  async listar(filtro?: { tipo?: 'pagar' | 'receber'; status?: string }) {
+  /** Operador (admin/financeiro) vê todas as contas; comprador só as próprias. */
+  private isOperador(role: string): boolean {
+    return role === 'admin' || role === 'financeiro';
+  }
+
+  /** Anti-IDOR: comprador só acessa conta própria (404 não revela existência). */
+  private assertOwner(conta: { usuarioId: string | null }, requester: { id: string; role: string }) {
+    if (!this.isOperador(requester.role) && conta.usuarioId !== requester.id) {
+      throw new NotFoundException('Conta não encontrada');
+    }
+  }
+
+  async listar(
+    filtro: { tipo?: 'pagar' | 'receber'; status?: string },
+    requester: { id: string; role: string },
+  ) {
     return this.prisma.conta.findMany({
       where: {
         ...(filtro?.tipo && { tipo: filtro.tipo }),
         ...(filtro?.status && { status: filtro.status as never }),
+        ...(!this.isOperador(requester.role) && { usuarioId: requester.id }),
       },
       orderBy: { vencimento: 'asc' },
       include: {
@@ -23,7 +39,7 @@ export class FinanceiroService {
     });
   }
 
-  async criar(dto: CriarContaInput) {
+  async criar(dto: CriarContaInput, usuarioId: string) {
     return this.prisma.conta.create({
       data: {
         tipo: dto.tipo,
@@ -31,6 +47,7 @@ export class FinanceiroService {
         valor: dto.valor,
         vencimento: new Date(dto.vencimento),
         pedidoId: dto.pedidoId,
+        usuarioId,
       },
       include: {
         pedido: { select: { id: true, numero: true } },
@@ -38,16 +55,17 @@ export class FinanceiroService {
     });
   }
 
-  async marcarPaga(id: string, atorId?: string) {
+  async marcarPaga(id: string, requester: { id: string; role: string }) {
     const conta = await this.prisma.conta.findUnique({ where: { id } });
     if (!conta) throw new NotFoundException('Conta não encontrada');
+    this.assertOwner(conta, requester);
     const atualizada = await this.prisma.conta.update({
       where: { id },
       data: { status: 'paga', pagoEm: new Date() },
       include: { pedido: { select: { id: true, numero: true } } },
     });
     await this.audit.registrar({
-      atorId,
+      atorId: requester.id,
       acao: 'conta.paga',
       entidade: 'Conta',
       entidadeId: id,
@@ -57,13 +75,16 @@ export class FinanceiroService {
     return atualizada;
   }
 
-  async cancelar(id: string, atorId?: string) {
+  async cancelar(id: string, requester: { id: string; role: string }) {
+    const conta = await this.prisma.conta.findUnique({ where: { id } });
+    if (!conta) throw new NotFoundException('Conta não encontrada');
+    this.assertOwner(conta, requester);
     const atualizada = await this.prisma.conta.update({
       where: { id },
       data: { status: 'cancelada' },
     });
     await this.audit.registrar({
-      atorId,
+      atorId: requester.id,
       acao: 'conta.cancelada',
       entidade: 'Conta',
       entidadeId: id,
@@ -71,8 +92,11 @@ export class FinanceiroService {
     return atualizada;
   }
 
-  async dashboard(): Promise<DashboardFinanceiro> {
-    // Marca contas vencidas (que passaram do vencimento e ainda estão abertas)
+  async dashboard(requester: { id: string; role: string }): Promise<DashboardFinanceiro> {
+    // Comprador vê só o próprio financeiro; admin/financeiro veem a operação.
+    const escopo = this.isOperador(requester.role) ? {} : { usuarioId: requester.id };
+
+    // Marca contas vencidas (manutenção — passou do vencimento e ainda aberta)
     const now = new Date();
     await this.prisma.conta.updateMany({
       where: { status: 'aberta', vencimento: { lt: now } },
@@ -81,14 +105,14 @@ export class FinanceiroService {
 
     const [aPagar, aReceber, vencidas] = await Promise.all([
       this.prisma.conta.aggregate({
-        where: { tipo: 'pagar', status: { in: ['aberta', 'vencida'] } },
+        where: { tipo: 'pagar', status: { in: ['aberta', 'vencida'] }, ...escopo },
         _sum: { valor: true },
       }),
       this.prisma.conta.aggregate({
-        where: { tipo: 'receber', status: { in: ['aberta', 'vencida'] } },
+        where: { tipo: 'receber', status: { in: ['aberta', 'vencida'] }, ...escopo },
         _sum: { valor: true },
       }),
-      this.prisma.conta.count({ where: { status: 'vencida' } }),
+      this.prisma.conta.count({ where: { status: 'vencida', ...escopo } }),
     ]);
 
     // Fluxo dos últimos 6 meses (entradas = receber paga, saídas = pagar paga)
@@ -98,7 +122,7 @@ export class FinanceiroService {
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
     const contasPagas = await this.prisma.conta.findMany({
-      where: { status: 'paga', pagoEm: { gte: sixMonthsAgo } },
+      where: { status: 'paga', pagoEm: { gte: sixMonthsAgo }, ...escopo },
       select: { tipo: true, valor: true, pagoEm: true },
     });
 
