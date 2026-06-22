@@ -97,7 +97,7 @@ export class PedidosService {
     return atualizado;
   }
 
-  async findById(id: string) {
+  async findById(id: string, requester?: { id: string; role: string }) {
     const p = await this.prisma.pedido.findUnique({
       where: { id },
       include: {
@@ -111,6 +111,17 @@ export class PedidosService {
       },
     });
     if (!p) throw new NotFoundException('Pedido não encontrado');
+
+    // Anti-IDOR: comprador só acessa o próprio pedido; admin/financeiro veem todos.
+    // 404 (não 403) para não revelar a existência do recurso a terceiros.
+    if (
+      requester &&
+      requester.role !== 'admin' &&
+      requester.role !== 'financeiro' &&
+      p.usuarioId !== requester.id
+    ) {
+      throw new NotFoundException('Pedido não encontrado');
+    }
 
     // Anexa a rastreabilidade (vem do agrupamento finalizado de cada item)
     return {

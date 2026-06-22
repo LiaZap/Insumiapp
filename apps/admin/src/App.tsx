@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { isAuthenticated } from './lib/auth';
+import { isAuthenticated, isAdmin } from './lib/auth';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/LoginPage';
@@ -19,6 +19,9 @@ import { TermosPage } from './pages/TermosPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
+  // Back-office é só para admin — comprador/financeiro são barrados aqui
+  // (defesa em profundidade; a API também aplica AdminGuard).
+  if (!isAdmin()) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 

@@ -27,7 +27,7 @@ type UserAdmin = {
   nome: string;
   email: string;
   empresa: string | null;
-  role: 'admin' | 'comprador' | 'financeiro' | 'vendedor';
+  role: 'admin' | 'comprador' | 'financeiro';
   bloqueado: boolean;
   criadoEm: string;
   pedidosCount: number;
@@ -44,7 +44,6 @@ const ROLE_LABEL: Record<UserAdmin['role'], string> = {
   admin: 'Administrador',
   comprador: 'Comprador',
   financeiro: 'Financeiro',
-  vendedor: 'Vendedor',
 };
 
 export function UsuariosPage() {

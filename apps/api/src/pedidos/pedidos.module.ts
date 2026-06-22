@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PedidosController } from './pedidos.controller';
 import { PedidosService } from './pedidos.service';
 import { AuthGuard } from '../common/auth.guard';
+import { AdminGuard } from '../common/admin.guard';
 import { PushModule } from '../push/push.module';
 
 @Module({
@@ -18,6 +19,6 @@ import { PushModule } from '../push/push.module';
     PushModule,
   ],
   controllers: [PedidosController],
-  providers: [PedidosService, AuthGuard],
+  providers: [PedidosService, AuthGuard, AdminGuard],
 })
 export class PedidosModule {}

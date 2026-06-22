@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AgrupamentosController, AgrupamentosPublicoController } from './agrupamentos.controller';
 import { AgrupamentosService } from './agrupamentos.service';
 import { AuthGuard } from '../common/auth.guard';
+import { AdminGuard } from '../common/admin.guard';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { AuthGuard } from '../common/auth.guard';
     }),
   ],
   controllers: [AgrupamentosController, AgrupamentosPublicoController],
-  providers: [AgrupamentosService, AuthGuard],
+  providers: [AgrupamentosService, AuthGuard, AdminGuard],
   exports: [AgrupamentosService],
 })
 export class AgrupamentosModule {}

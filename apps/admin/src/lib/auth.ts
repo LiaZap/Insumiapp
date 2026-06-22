@@ -30,3 +30,8 @@ export function currentUser(): User | null {
 export function isAuthenticated(): boolean {
   return Boolean(getToken() && currentUser());
 }
+
+/** O back-office é exclusivo de operadores admin. */
+export function isAdmin(): boolean {
+  return currentUser()?.role === 'admin';
+}

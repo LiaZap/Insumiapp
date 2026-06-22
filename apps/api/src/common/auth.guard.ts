@@ -6,12 +6,16 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { PrismaService } from '../prisma/prisma.service';
 
-export type AuthRequest = Request & { user: { id: string } };
+export type AuthRequest = Request & { user: { id: string; role: string } };
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthRequest>();
@@ -21,8 +25,18 @@ export class AuthGuard implements CanActivate {
     }
     const token = auth.slice(7);
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: string }>(token);
-      req.user = { id: payload.sub };
+      const payload = await this.jwt.verifyAsync<{ sub: string; role?: string }>(token);
+      let role = payload.role;
+      // Token antigo (emitido antes do role no JWT): resolve do banco. Transição
+      // self-healing — some sozinho conforme os tokens expiram e são reemitidos.
+      if (!role) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          select: { role: true },
+        });
+        role = user?.role ?? 'comprador';
+      }
+      req.user = { id: payload.sub, role };
       return true;
     } catch {
       throw new UnauthorizedException('Token inválido');

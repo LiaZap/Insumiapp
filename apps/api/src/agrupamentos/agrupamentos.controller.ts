@@ -10,11 +10,12 @@ import {
 } from '@insumia/shared';
 import { AgrupamentosService } from './agrupamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { AuthGuard } from '../common/auth.guard';
+import { AdminGuard } from '../common/admin.guard';
 
+// Operação de cotação/agrupamento é exclusiva do back-office (admin).
 @ApiTags('agrupamentos')
 @ApiBearerAuth()
-@UseGuards(AuthGuard)
+@UseGuards(AdminGuard)
 @Controller('agrupamentos')
 export class AgrupamentosController {
   constructor(private readonly agrupamentos: AgrupamentosService) {}

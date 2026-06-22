@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MedicamentosController } from './medicamentos.controller';
 import { MedicamentosService } from './medicamentos.service';
 import { AuthGuard } from '../common/auth.guard';
+import { AdminGuard } from '../common/admin.guard';
 
 @Module({
   imports: [
@@ -16,6 +17,6 @@ import { AuthGuard } from '../common/auth.guard';
     }),
   ],
   controllers: [MedicamentosController],
-  providers: [MedicamentosService, AuthGuard],
+  providers: [MedicamentosService, AuthGuard, AdminGuard],
 })
 export class MedicamentosModule {}

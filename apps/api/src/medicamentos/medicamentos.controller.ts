@@ -8,7 +8,7 @@ import {
 } from '@insumia/shared';
 import { MedicamentosService } from './medicamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { AuthGuard } from '../common/auth.guard';
+import { AdminGuard } from '../common/admin.guard';
 
 const upsertMedicamentoSchema = z.object({
   nome: z.string().min(2),
@@ -35,14 +35,14 @@ export class MedicamentosController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminGuard)
   criar(@Body(new ZodValidationPipe(upsertMedicamentoSchema)) dto: UpsertMedicamento) {
     return this.service.criar(dto);
   }
 
   @Patch(':id')
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminGuard)
   atualizar(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(upsertMedicamentoSchema.partial())) dto: Partial<UpsertMedicamento>,

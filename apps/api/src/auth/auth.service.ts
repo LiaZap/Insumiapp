@@ -40,7 +40,7 @@ export class AuthService {
         empresa: dto.empresa ?? null,
       },
     });
-    return { user: this.toSharedUser(user), accessToken: this.signToken(user.id) };
+    return { user: this.toSharedUser(user), accessToken: this.signToken(user.id, user.role) };
   }
 
   async login(dto: LoginInput): Promise<{ user: SharedUser; accessToken: string }> {
@@ -52,7 +52,7 @@ export class AuthService {
     if (user.bloqueado) {
       throw new ForbiddenException('Conta bloqueada. Entre em contato com o suporte.');
     }
-    return { user: this.toSharedUser(user), accessToken: this.signToken(user.id) };
+    return { user: this.toSharedUser(user), accessToken: this.signToken(user.id, user.role) };
   }
 
   /** Atualiza nome/empresa do próprio usuário (PATCH /auth/me). */
@@ -67,8 +67,8 @@ export class AuthService {
     return this.toSharedUser(user);
   }
 
-  private signToken(userId: string): string {
-    return this.jwt.sign({ sub: userId });
+  private signToken(userId: string, role: string): string {
+    return this.jwt.sign({ sub: userId, role });
   }
 
   /**
