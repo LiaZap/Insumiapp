@@ -6,11 +6,9 @@ export function TermosPage() {
       {/* Topbar simples — sem login */}
       <header className="border-b border-black/5 bg-white">
         <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-6 py-5">
-          <Logo size={32} />
-          <div className="leading-tight">
-            <p className="text-sm font-bold text-brand-700">Insumia</p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-ink-400">Termos de Uso</p>
-          </div>
+          <Logo height={24} />
+          <span className="h-7 w-px bg-black/10" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-400">Termos de Uso</p>
         </div>
       </header>
 

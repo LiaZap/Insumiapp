@@ -62,9 +62,8 @@ export function CotarPublicoPage() {
   return (
     <div className="flex min-h-full items-center justify-center bg-brand-900 px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex items-center justify-center gap-2.5">
-          <Logo size={40} />
-          <span className="text-lg font-bold text-white">Insumia</span>
+        <div className="mb-6 flex justify-center">
+          <Logo variant="white" height={30} />
         </div>
 
         <div className="rounded-2xl bg-white p-7 shadow-xl">

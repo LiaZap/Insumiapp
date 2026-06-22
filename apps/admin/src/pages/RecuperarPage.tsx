@@ -135,11 +135,9 @@ function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-full bg-surface-base">
       <header className="border-b border-black/5 bg-white">
         <div className="mx-auto flex max-w-md items-center gap-2.5 px-6 py-5">
-          <Logo size={32} />
-          <div className="leading-tight">
-            <p className="text-sm font-bold text-brand-700">Insumia</p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-ink-400">Recuperar acesso</p>
-          </div>
+          <Logo height={24} />
+          <span className="h-7 w-px bg-black/10" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-400">Recuperar acesso</p>
         </div>
       </header>
       <main className="mx-auto max-w-md px-6 py-10">{children}</main>

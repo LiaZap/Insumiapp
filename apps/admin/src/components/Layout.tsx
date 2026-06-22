@@ -75,8 +75,9 @@ export function Layout() {
               <line x1="4" y1="17" x2="20" y2="17" />
             </svg>
           </button>
-          <div className="flex items-center gap-2">
-            <Logo size={26} />
+          <div className="flex items-center gap-2.5">
+            <Logo height={20} />
+            <span className="h-4 w-px bg-black/10" />
             <span className="text-sm font-bold text-brand-700">
               {currentPageLabel(location.pathname)}
             </span>
@@ -100,12 +101,9 @@ function SidebarContent({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2.5 px-6 py-6">
-        <Logo size={38} />
-        <div>
-          <p className="text-sm font-bold leading-none">Insumia</p>
-          <p className="mt-0.5 text-[10px] text-white/50">Back Office</p>
-        </div>
+      <div className="px-6 py-6">
+        <Logo variant="white" height={26} />
+        <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/45">Back Office</p>
       </div>
 
       <nav className="mt-2 flex-1 overflow-y-auto px-3">

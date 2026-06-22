@@ -80,16 +80,13 @@ export function LoginPage() {
 
         <div className="relative flex h-full flex-col justify-between p-14">
           {/* Topo */}
-          <div className="flex items-center gap-3">
+          <div>
             <div className="drop-shadow-[0_8px_20px_rgba(0,0,0,0.45)]">
-              <Logo size={46} />
+              <Logo variant="white" height={34} />
             </div>
-            <div className="leading-tight">
-              <p className="text-[15px] font-bold tracking-tight text-white">Insumia</p>
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent-400/80">
-                Back Office
-              </p>
-            </div>
+            <p className="mt-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-accent-400/80">
+              Back Office
+            </p>
           </div>
 
           {/* Centro */}
@@ -129,9 +126,8 @@ export function LoginPage() {
       <div className="flex items-center justify-center bg-white px-6 py-12">
         <div className="w-full max-w-[360px]">
           {/* Logo (aparece em telas menores) */}
-          <div className="mb-10 flex items-center gap-2.5 lg:hidden">
-            <Logo size={40} />
-            <span className="text-[15px] font-bold tracking-tight text-brand-700">Insumia</span>
+          <div className="mb-10 lg:hidden">
+            <Logo height={28} />
           </div>
 
           <h2 className="text-[1.6rem] font-bold tracking-tight text-brand-700">Acessar painel</h2>
