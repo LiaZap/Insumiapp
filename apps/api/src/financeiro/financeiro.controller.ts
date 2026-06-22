@@ -1,9 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { criarContaSchema, type CriarContaInput } from '@insumia/shared';
+import {
+  buscaContaSchema,
+  criarContaSchema,
+  type BuscaContaInput,
+  type CriarContaInput,
+} from '@insumia/shared';
 import { FinanceiroService } from './financeiro.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { AuthGuard } from '../common/auth.guard';
+import { AuthGuard, type AuthRequest } from '../common/auth.guard';
 
 @ApiTags('financeiro')
 @ApiBearerAuth()
@@ -13,11 +18,8 @@ export class FinanceiroController {
   constructor(private readonly fin: FinanceiroService) {}
 
   @Get('contas')
-  list(@Query('tipo') tipo?: string, @Query('status') status?: string) {
-    return this.fin.listar({
-      tipo: tipo === 'pagar' || tipo === 'receber' ? tipo : undefined,
-      status,
-    });
+  list(@Query(new ZodValidationPipe(buscaContaSchema)) q: BuscaContaInput) {
+    return this.fin.listar(q);
   }
 
   @Post('contas')
@@ -26,13 +28,13 @@ export class FinanceiroController {
   }
 
   @Patch('contas/:id/pagar')
-  pagar(@Param('id') id: string) {
-    return this.fin.marcarPaga(id);
+  pagar(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.fin.marcarPaga(id, req.user.id);
   }
 
   @Patch('contas/:id/cancelar')
-  cancelar(@Param('id') id: string) {
-    return this.fin.cancelar(id);
+  cancelar(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.fin.cancelar(id, req.user.id);
   }
 
   @Get('dashboard')

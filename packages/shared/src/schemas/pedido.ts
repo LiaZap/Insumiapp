@@ -14,6 +14,21 @@ export const pedidoStatusSchema = z.enum([
 ]);
 export type PedidoStatus = z.infer<typeof pedidoStatusSchema>;
 
+// Transições de status que o admin avança MANUALMENTE (fluxo operacional).
+// As transições de cotação (aguardando_cotacao→cotado→confirmado/cancelado)
+// são do Motor de Cotação (enviarCotacao/aceitar/recusar) e não entram aqui.
+// Fonte única consumida pela API (validação) e pelo back-office (UI).
+export const NEXT_STATUS_MANUAL: Record<PedidoStatus, PedidoStatus[]> = {
+  rascunho: ['aguardando_cotacao', 'cancelado'],
+  aguardando_cotacao: [],
+  cotado: [],
+  confirmado: ['em_separacao', 'cancelado'],
+  em_separacao: ['enviado'],
+  enviado: ['entregue'],
+  entregue: [],
+  cancelado: [],
+};
+
 export const pedidoItemSchema = z.object({
   medicamentoId: z.string().uuid(),
   quantidade: z.number().int().min(1),

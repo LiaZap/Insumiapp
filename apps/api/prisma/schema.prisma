@@ -87,6 +87,7 @@ model User {
   pushTokens     PushToken[]
   enderecos      Endereco[]
   notificacoes   Notificacao[]
+  auditLogs      AuditLog[]
 }
 
 model PushToken {
@@ -342,4 +343,24 @@ model Notificacao {
   usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId, lidaEm])
+}
+
+// Trilha de auditoria de ações sensíveis (status de pedido, escolha de vencedor,
+// baixa de conta, bloqueio/exclusão de usuário). Json aqui é payload de auditoria
+// (antes/depois), não dado de domínio. atorId SetNull para não travar exclusão LGPD.
+model AuditLog {
+  id          String   @id @default(uuid())
+  atorId      String?
+  acao        String
+  entidade    String
+  entidadeId  String
+  dadosAntes  Json?
+  dadosDepois Json?
+  criadoEm    DateTime @default(now())
+
+  ator User? @relation(fields: [atorId], references: [id], onDelete: SetNull)
+
+  @@index([entidade, entidadeId])
+  @@index([atorId])
+  @@index([criadoEm])
 }

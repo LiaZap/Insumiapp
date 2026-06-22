@@ -1,4 +1,4 @@
-import type { PedidoStatus } from '@insumia/shared';
+import { NEXT_STATUS_MANUAL, type PedidoStatus } from '@insumia/shared';
 
 export const STATUS_LABEL: Record<PedidoStatus, string> = {
   rascunho: 'Rascunho',
@@ -11,15 +11,6 @@ export const STATUS_LABEL: Record<PedidoStatus, string> = {
   cancelado: 'Cancelado',
 };
 
-// Próximos status que o admin avança manualmente.
-// aguardando_cotacao e cotado são tratados pelo Motor de Cotação (não manuais).
-export const NEXT_STATUS: Record<PedidoStatus, PedidoStatus[]> = {
-  rascunho: ['aguardando_cotacao', 'cancelado'],
-  aguardando_cotacao: [],
-  cotado: [],
-  confirmado: ['em_separacao', 'cancelado'],
-  em_separacao: ['enviado'],
-  enviado: ['entregue'],
-  entregue: [],
-  cancelado: [],
-};
+// Próximos status que o admin avança manualmente — fonte única no @insumia/shared
+// (mesma usada pela API para validar a transição).
+export const NEXT_STATUS = NEXT_STATUS_MANUAL;

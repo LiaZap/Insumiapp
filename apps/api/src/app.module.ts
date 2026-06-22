@@ -14,6 +14,7 @@ import { UsersModule } from './users/users.module';
 import { PushModule } from './push/push.module';
 import { EnderecosModule } from './enderecos/enderecos.module';
 import { NotificacoesModule } from './notificacoes/notificacoes.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { NotificacoesModule } from './notificacoes/notificacoes.module';
     PushModule,
     EnderecosModule,
     NotificacoesModule,
+    AuditModule,
   ],
 })
 export class AppModule {}

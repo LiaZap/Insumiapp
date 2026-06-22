@@ -55,20 +55,22 @@ export class PedidosController {
   @Patch(':id/status')
   @UseGuards(AdminGuard)
   atualizarStatus(
+    @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(atualizarStatusSchema)) body: { status: PedidoStatus },
   ) {
-    return this.pedidos.atualizarStatus(id, body.status);
+    return this.pedidos.atualizarStatus(id, body.status, req.user.id);
   }
 
   /** Admin envia a cotação. */
   @Patch(':id/cotacao')
   @UseGuards(AdminGuard)
   enviarCotacao(
+    @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(enviarCotacaoSchema)) dto: EnviarCotacaoInput,
   ) {
-    return this.pedidos.enviarCotacao(id, dto);
+    return this.pedidos.enviarCotacao(id, dto, req.user.id);
   }
 
   /** Cliente aceita a cotação do próprio pedido. */

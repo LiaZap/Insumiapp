@@ -1,8 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import type { CriarPedidoInput, EnviarCotacaoInput, PedidoStatus } from '@insumia/shared';
+import {
+  NEXT_STATUS_MANUAL,
+  type CriarPedidoInput,
+  type EnviarCotacaoInput,
+  type PedidoStatus,
+} from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgrupamentosService } from '../agrupamentos/agrupamentos.service';
 import { PushService } from '../push/push.service';
+import { AuditService } from '../audit/audit.service';
 
 const STATUS_PUSH_LABEL: Record<PedidoStatus, string | null> = {
   rascunho: null,
@@ -25,6 +31,7 @@ export class PedidosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly push: PushService,
+    private readonly audit: AuditService,
   ) {}
 
   /** Dispara push de atualização de status pro dono do pedido. */
@@ -82,18 +89,45 @@ export class PedidosService {
     });
   }
 
-  async atualizarStatus(id: string, status: PedidoStatus) {
+  async atualizarStatus(id: string, status: PedidoStatus, atorId?: string) {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido não encontrado');
-    const atualizado = await this.prisma.pedido.update({
-      where: { id },
-      data: { status },
-      include: {
-        itens: { include: { medicamento: true } },
-        usuario: { select: { id: true, nome: true, empresa: true, email: true } },
-      },
+
+    // Máquina de estados: só permite transições manuais válidas (evita pulos
+    // e regressões, ex.: entregue → rascunho).
+    if (!NEXT_STATUS_MANUAL[pedido.status].includes(status)) {
+      throw new BadRequestException(
+        `Transição de status inválida: ${pedido.status} → ${status}`,
+      );
+    }
+
+    const atualizado = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.pedido.update({
+        where: { id },
+        data: { status },
+        include: {
+          itens: { include: { medicamento: true } },
+          usuario: { select: { id: true, nome: true, empresa: true, email: true } },
+        },
+      });
+      // Cancelar o pedido cancela a conta a pagar vinculada (igual recusarCotacao).
+      if (status === 'cancelado') {
+        await tx.conta.updateMany({
+          where: { pedidoId: id, status: { in: ['aberta', 'vencida'] } },
+          data: { status: 'cancelada' },
+        });
+      }
+      return p;
     });
     await this.notificar(id, status);
+    await this.audit.registrar({
+      atorId,
+      acao: 'pedido.status',
+      entidade: 'Pedido',
+      entidadeId: id,
+      antes: { status: pedido.status },
+      depois: { status },
+    });
     return atualizado;
   }
 
@@ -144,7 +178,7 @@ export class PedidosService {
   }
 
   /** Admin envia a cotação: define preço/disponibilidade por item, prazo e validade. */
-  async enviarCotacao(id: string, dto: EnviarCotacaoInput) {
+  async enviarCotacao(id: string, dto: EnviarCotacaoInput, atorId?: string) {
     const pedido = await this.prisma.pedido.findUnique({
       where: { id },
       include: { itens: true },
@@ -192,6 +226,13 @@ export class PedidosService {
     });
 
     await this.notificar(id, 'cotado');
+    await this.audit.registrar({
+      atorId,
+      acao: 'pedido.cotacao',
+      entidade: 'Pedido',
+      entidadeId: id,
+      depois: { prazoEntregaDias: dto.prazoEntregaDias, validadeHoras: dto.validadeHoras },
+    });
     return this.findById(id);
   }
 

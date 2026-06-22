@@ -1,16 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
+  buscaAgrupamentoSchema,
   criarLanceAdminSchema,
   criarLancePublicoSchema,
   finalizarAgrupamentoSchema,
+  type BuscaAgrupamentoInput,
   type CriarLanceAdminInput,
   type CriarLancePublicoInput,
   type FinalizarAgrupamentoInput,
 } from '@insumia/shared';
 import { AgrupamentosService } from './agrupamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { AdminGuard } from '../common/admin.guard';
+import { AdminGuard, type AdminRequest } from '../common/admin.guard';
 
 // Operação de cotação/agrupamento é exclusiva do back-office (admin).
 @ApiTags('agrupamentos')
@@ -21,8 +23,8 @@ export class AgrupamentosController {
   constructor(private readonly agrupamentos: AgrupamentosService) {}
 
   @Get()
-  listar(@Query('status') status?: string) {
-    return this.agrupamentos.listar(status);
+  listar(@Query(new ZodValidationPipe(buscaAgrupamentoSchema)) q: BuscaAgrupamentoInput) {
+    return this.agrupamentos.listar(q.status);
   }
 
   @Get(':id')
@@ -44,16 +46,21 @@ export class AgrupamentosController {
   }
 
   @Post(':id/escolher/:lanceId')
-  escolherVencedor(@Param('id') id: string, @Param('lanceId') lanceId: string) {
-    return this.agrupamentos.escolherVencedor(id, lanceId);
+  escolherVencedor(
+    @Req() req: AdminRequest,
+    @Param('id') id: string,
+    @Param('lanceId') lanceId: string,
+  ) {
+    return this.agrupamentos.escolherVencedor(id, lanceId, req.user.id);
   }
 
   @Patch(':id/finalizar')
   finalizar(
+    @Req() req: AdminRequest,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(finalizarAgrupamentoSchema)) dto: FinalizarAgrupamentoInput,
   ) {
-    return this.agrupamentos.finalizar(id, dto);
+    return this.agrupamentos.finalizar(id, dto, req.user.id);
   }
 }
 

@@ -38,6 +38,12 @@ export const contaSchema = z.object({
 });
 export type Conta = z.infer<typeof contaSchema>;
 
+export const buscaContaSchema = z.object({
+  tipo: contaTipoSchema.optional(),
+  status: contaStatusSchema.optional(),
+});
+export type BuscaContaInput = z.infer<typeof buscaContaSchema>;
+
 export const criarContaSchema = z.object({
   tipo: contaTipoSchema,
   descricao: z.string().min(2),

@@ -11,6 +11,11 @@ export const agrupamentoStatusSchema = z.enum([
 ]);
 export type AgrupamentoStatus = z.infer<typeof agrupamentoStatusSchema>;
 
+export const buscaAgrupamentoSchema = z.object({
+  status: agrupamentoStatusSchema.optional(),
+});
+export type BuscaAgrupamentoInput = z.infer<typeof buscaAgrupamentoSchema>;
+
 export const AGRUPAMENTO_STATUS_LABEL: Record<AgrupamentoStatus, string> = {
   aberto: 'Aberto',
   em_cotacao: 'Em cotação',

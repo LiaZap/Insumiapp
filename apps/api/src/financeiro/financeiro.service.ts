@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { CriarContaInput, DashboardFinanceiro } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class FinanceiroService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async listar(filtro?: { tipo?: 'pagar' | 'receber'; status?: string }) {
     return this.prisma.conta.findMany({
@@ -34,21 +38,37 @@ export class FinanceiroService {
     });
   }
 
-  async marcarPaga(id: string) {
+  async marcarPaga(id: string, atorId?: string) {
     const conta = await this.prisma.conta.findUnique({ where: { id } });
     if (!conta) throw new NotFoundException('Conta não encontrada');
-    return this.prisma.conta.update({
+    const atualizada = await this.prisma.conta.update({
       where: { id },
       data: { status: 'paga', pagoEm: new Date() },
       include: { pedido: { select: { id: true, numero: true } } },
     });
+    await this.audit.registrar({
+      atorId,
+      acao: 'conta.paga',
+      entidade: 'Conta',
+      entidadeId: id,
+      antes: { status: conta.status },
+      depois: { status: 'paga', valor: Number(conta.valor) },
+    });
+    return atualizada;
   }
 
-  async cancelar(id: string) {
-    return this.prisma.conta.update({
+  async cancelar(id: string, atorId?: string) {
+    const atualizada = await this.prisma.conta.update({
       where: { id },
       data: { status: 'cancelada' },
     });
+    await this.audit.registrar({
+      atorId,
+      acao: 'conta.cancelada',
+      entidade: 'Conta',
+      entidadeId: id,
+    });
+    return atualizada;
   }
 
   async dashboard(): Promise<DashboardFinanceiro> {

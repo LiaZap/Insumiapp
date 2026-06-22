@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 type Tx = Prisma.TransactionClient;
 
 @Injectable()
 export class AgrupamentosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Garante um agrupamento ABERTO para o medicamento e devolve seu id.
@@ -126,6 +130,7 @@ export class AgrupamentosService {
   async finalizar(
     id: string,
     dto: { lote: string; validade?: string; fabricante?: string; notaFiscal?: string },
+    atorId?: string,
   ) {
     const a = await this.prisma.agrupamento.findUnique({ where: { id } });
     if (!a) throw new NotFoundException('Agrupamento não encontrado');
@@ -142,6 +147,13 @@ export class AgrupamentosService {
         notaFiscal: dto.notaFiscal,
         finalizadoEm: new Date(),
       },
+    });
+    await this.audit.registrar({
+      atorId,
+      acao: 'agrupamento.finalizar',
+      entidade: 'Agrupamento',
+      entidadeId: id,
+      depois: { lote: dto.lote, notaFiscal: dto.notaFiscal ?? null },
     });
     return this.detalhe(id);
   }
@@ -223,7 +235,7 @@ export class AgrupamentosService {
    * Admin escolhe o lance vencedor: propaga o preço para os itens dos pedidos,
    * recalcula totais e move os pedidos para cotação quando completos.
    */
-  async escolherVencedor(id: string, lanceId: string) {
+  async escolherVencedor(id: string, lanceId: string, atorId?: string) {
     const a = await this.prisma.agrupamento.findUnique({
       where: { id },
       include: { lances: true, itens: true },
@@ -285,6 +297,13 @@ export class AgrupamentosService {
       }
     });
 
+    await this.audit.registrar({
+      atorId,
+      acao: 'agrupamento.vencedor',
+      entidade: 'Agrupamento',
+      entidadeId: id,
+      depois: { lanceId, fornecedor: lance.fornecedorNome, precoUnitario: Number(lance.precoUnitario) },
+    });
     return this.detalhe(id);
   }
 
