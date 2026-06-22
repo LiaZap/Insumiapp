@@ -46,11 +46,27 @@ enum ContaStatus {
 }
 
 enum AgrupamentoStatus {
-  aberto       // acumulando itens de pedidos
-  em_cotacao   // fechado pelo admin, aguardando lances de fornecedores
-  cotado       // fornecedor vencedor escolhido
+  aberto // acumulando itens de pedidos
+  em_cotacao // fechado pelo admin, aguardando lances de fornecedores
+  cotado // fornecedor vencedor escolhido
   finalizado
   cancelado
+}
+
+enum MedicamentoCategoria {
+  estetica
+  higiene
+  descartaveis
+  material
+  antissepticos
+  solucoes
+  insumos
+}
+
+enum NotificacaoTipo {
+  pedido
+  alerta
+  sistema
 }
 
 model User {
@@ -69,13 +85,15 @@ model User {
   estoqueItens   EstoqueItem[]
   passwordResets PasswordReset[]
   pushTokens     PushToken[]
+  enderecos      Endereco[]
+  notificacoes   Notificacao[]
 }
 
 model PushToken {
   id           String   @id @default(uuid())
   userId       String
   token        String   @unique
-  plataforma   String   // ios | android
+  plataforma   String // ios | android
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -99,20 +117,21 @@ model PasswordReset {
 }
 
 model Medicamento {
-  id             String   @id @default(uuid())
+  id             String               @id @default(uuid())
   nome           String
   principioAtivo String?
   fabricante     String?
   apresentacao   String?
   dosagem        String?
-  categoria      String
-  precoUnitario  Decimal  @db.Decimal(12, 2)
-  custo          Decimal? @db.Decimal(12, 2)
-  ean            String?  @unique
-  receituario    Boolean  @default(false)
+  categoria      MedicamentoCategoria
+  precoUnitario  Decimal              @db.Decimal(12, 2)
+  custo          Decimal?             @db.Decimal(12, 2)
+  ean            String?              @unique
+  receituario    Boolean              @default(false)
+  ativo          Boolean              @default(true)
   imagemUrl      String?
-  criadoEm       DateTime @default(now())
-  atualizadoEm   DateTime @updatedAt
+  criadoEm       DateTime             @default(now())
+  atualizadoEm   DateTime             @updatedAt
 
   itensPedido   PedidoItem[]
   estoque       EstoqueItem[]
@@ -127,11 +146,16 @@ model Pedido {
   id           String       @id @default(uuid())
   numero       String       @unique
   status       PedidoStatus @default(rascunho)
-  total        Decimal      @db.Decimal(12, 2) @default(0)
+  total        Decimal      @default(0) @db.Decimal(12, 2)
   observacao   String?
   usuarioId    String
   criadoEm     DateTime     @default(now())
   atualizadoEm DateTime     @updatedAt
+
+  // Destino de entrega: FK para o endereço + snapshot textual congelado
+  // (preserva o histórico mesmo se o endereço for editado/removido).
+  enderecoEntregaId    String?
+  enderecoEntregaTexto String?
 
   // Motor de cotação
   cotacaoEnviadaEm  DateTime?
@@ -140,12 +164,14 @@ model Pedido {
   cotacaoObservacao String?
   respondidaEm      DateTime?
 
-  usuario User         @relation(fields: [usuarioId], references: [id])
-  itens   PedidoItem[]
-  contas  Conta[]
+  usuario         User         @relation(fields: [usuarioId], references: [id])
+  enderecoEntrega Endereco?    @relation(fields: [enderecoEntregaId], references: [id], onDelete: SetNull)
+  itens           PedidoItem[]
+  contas          Conta[]
 
   @@index([usuarioId])
   @@index([status])
+  @@index([criadoEm])
 }
 
 model PedidoItem {
@@ -198,7 +224,7 @@ model Agrupamento {
 model Fornecedor {
   id           String   @id @default(uuid())
   nome         String
-  cnpj         String?
+  cnpj         String?  @unique
   email        String?
   telefone     String?
   ativo        Boolean  @default(true)
@@ -224,6 +250,7 @@ model Lance {
   fornecedor  Fornecedor? @relation(fields: [fornecedorId], references: [id])
 
   @@index([agrupamentoId])
+  @@index([fornecedorId])
 }
 
 model EstoqueItem {
@@ -240,6 +267,7 @@ model EstoqueItem {
   usuario     User        @relation(fields: [usuarioId], references: [id])
 
   @@unique([usuarioId, medicamentoId, lote])
+  @@index([medicamentoId])
 }
 
 model Movimentacao {
@@ -257,23 +285,61 @@ model Movimentacao {
   usuario     User        @relation(fields: [usuarioId], references: [id])
 
   @@index([medicamentoId])
+  @@index([usuarioId])
   @@index([criadoEm])
 }
 
 model Conta {
-  id          String      @id @default(uuid())
-  tipo        ContaTipo
-  descricao   String
-  valor       Decimal     @db.Decimal(12, 2)
-  vencimento  DateTime
-  status      ContaStatus @default(aberta)
-  pagoEm      DateTime?
-  pedidoId    String?
-  criadoEm    DateTime    @default(now())
-  atualizadoEm DateTime   @updatedAt
+  id           String      @id @default(uuid())
+  tipo         ContaTipo
+  descricao    String
+  valor        Decimal     @db.Decimal(12, 2)
+  vencimento   DateTime
+  status       ContaStatus @default(aberta)
+  pagoEm       DateTime?
+  pedidoId     String?
+  criadoEm     DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
 
   pedido Pedido? @relation(fields: [pedidoId], references: [id])
 
   @@index([status])
   @@index([vencimento])
+  @@index([pedidoId])
+}
+
+model Endereco {
+  id           String   @id @default(uuid())
+  usuarioId    String
+  apelido      String
+  logradouro   String
+  numero       String?
+  complemento  String?
+  bairro       String?
+  cidade       String
+  uf           String
+  cep          String
+  principal    Boolean  @default(false)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuario User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pedidos Pedido[]
+
+  @@index([usuarioId])
+}
+
+model Notificacao {
+  id        String          @id @default(uuid())
+  usuarioId String
+  tipo      NotificacaoTipo @default(sistema)
+  titulo    String
+  corpo     String
+  pedidoId  String?
+  lidaEm    DateTime?
+  criadoEm  DateTime        @default(now())
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, lidaEm])
 }

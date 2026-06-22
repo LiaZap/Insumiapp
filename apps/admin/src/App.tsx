@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { isAuthenticated } from './lib/auth';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PedidosPage } from './pages/PedidosPage';
@@ -38,14 +39,70 @@ export function App() {
           </RequireAuth>
         }
       >
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/pedidos" element={<PedidosPage />} />
-        <Route path="/agrupamentos" element={<AgrupamentosPage />} />
-        <Route path="/fornecedores" element={<FornecedoresPage />} />
-        <Route path="/medicamentos" element={<MedicamentosPage />} />
-        <Route path="/estoque" element={<EstoquePage />} />
-        <Route path="/financeiro" element={<FinanceiroPage />} />
-        <Route path="/usuarios" element={<UsuariosPage />} />
+        <Route
+          path="/"
+          element={
+            <ErrorBoundary>
+              <DashboardPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/pedidos"
+          element={
+            <ErrorBoundary>
+              <PedidosPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/agrupamentos"
+          element={
+            <ErrorBoundary>
+              <AgrupamentosPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/fornecedores"
+          element={
+            <ErrorBoundary>
+              <FornecedoresPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/medicamentos"
+          element={
+            <ErrorBoundary>
+              <MedicamentosPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/estoque"
+          element={
+            <ErrorBoundary>
+              <EstoquePage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/financeiro"
+          element={
+            <ErrorBoundary>
+              <FinanceiroPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <ErrorBoundary>
+              <UsuariosPage />
+            </ErrorBoundary>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

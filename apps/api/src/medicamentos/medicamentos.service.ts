@@ -8,8 +8,9 @@ export class MedicamentosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async buscar(input: BuscaMedicamentoInput) {
-    const { q, categoria, page, perPage } = input;
+    const { q, categoria, incluirInativos, page, perPage } = input;
     const where: Prisma.MedicamentoWhereInput = {
+      ...(!incluirInativos && { ativo: true }),
       ...(q && {
         OR: [
           { nome: { contains: q, mode: 'insensitive' } },

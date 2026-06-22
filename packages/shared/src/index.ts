@@ -6,4 +6,6 @@ export * from './schemas/agrupamento';
 export * from './schemas/fornecedor';
 export * from './schemas/estoque';
 export * from './schemas/financeiro';
+export * from './schemas/endereco';
+export * from './schemas/notificacao';
 export * from './schemas/common';

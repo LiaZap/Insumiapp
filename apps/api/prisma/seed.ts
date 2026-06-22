@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -31,7 +31,7 @@ function pick<T>(arr: T[]): T {
 // Catálogo "soft" — produtos cosméticos, descartáveis e materiais de uso geral.
 // Evita itens que possam preocupar revisores de app store (medicamentos
 // controlados, anestésicos, toxinas). Foco em estética e higiene.
-const medicamentosSeed = [
+const medicamentosSeed: Prisma.MedicamentoCreateInput[] = [
   // Estética — cosméticos
   { nome: 'Esmalte Vermelho 9ml', fabricante: 'Risqué', apresentacao: 'Frasco', dosagem: '9ml', categoria: 'estetica', precoUnitario: 8.9 },
   { nome: 'Esmalte Nude 9ml', fabricante: 'Risqué', apresentacao: 'Frasco', dosagem: '9ml', categoria: 'estetica', precoUnitario: 8.9 },

@@ -12,6 +12,8 @@ import { EstoqueModule } from './estoque/estoque.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 import { UsersModule } from './users/users.module';
 import { PushModule } from './push/push.module';
+import { EnderecosModule } from './enderecos/enderecos.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PushModule } from './push/push.module';
     FinanceiroModule,
     UsersModule,
     PushModule,
+    EnderecosModule,
+    NotificacoesModule,
   ],
 })
 export class AppModule {}

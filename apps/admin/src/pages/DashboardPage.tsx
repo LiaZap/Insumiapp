@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { money } from '../lib/format';
-import { PageHeader, Card, Badge, Spinner } from '../components/ui';
+import { PageHeader, Card, Badge, SkeletonCard, SkeletonChartBlock, ErrorState } from '../components/ui';
 import { RevenueAreaChart, StatusDonut, RankingBars, Sparkline } from '../components/charts';
 import { STATUS_LABEL } from '../lib/labels';
+import { getChartHex } from '../lib/statusTokens';
 import type { DashboardFinanceiro, EstoqueResumo } from '@insumia/shared';
 
 type PedidoAdmin = {
@@ -23,17 +24,6 @@ const PERIODOS = [
   { key: 30, label: '30 dias' },
   { key: 90, label: '90 dias' },
 ] as const;
-
-const STATUS_COLORS: Record<string, string> = {
-  aguardando_cotacao: '#F59E0B',
-  cotado: '#5DDDF5',
-  confirmado: '#16A34A',
-  em_separacao: '#A16207',
-  enviado: '#1D4ED8',
-  entregue: '#1B498C',
-  cancelado: '#DC2626',
-  rascunho: '#9AA3B2',
-};
 
 const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -62,6 +52,7 @@ function KpiCard({
             className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold md:text-[11px] ${
               up ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
             }`}
+            aria-label={`${up ? 'Alta' : 'Queda'} de ${Math.abs(trend).toFixed(0)}%`}
           >
             {up ? '▲' : '▼'} {Math.abs(trend).toFixed(0)}%
           </span>
@@ -94,6 +85,7 @@ export function DashboardPage() {
   });
 
   const loading = pedidosQ.isLoading || finQ.isLoading || estoqueQ.isLoading;
+  const hasError = pedidosQ.isError || finQ.isError || estoqueQ.isError;
   const todos = pedidosQ.data ?? [];
 
   const m = useMemo(() => {
@@ -120,7 +112,6 @@ export function DashboardPage() {
     const trend = (cur: number, prev: number) =>
       prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100;
 
-    // Série diária de faturamento
     const bucket = new Map<string, { valor: number; pedidos: number }>();
     for (let i = periodo - 1; i >= 0; i--) {
       const d = new Date(now);
@@ -137,17 +128,23 @@ export function DashboardPage() {
     }
     const serie = Array.from(bucket.entries()).map(([k, v]) => {
       const d = new Date(k);
-      return { label: `${d.getDate()} ${MES[d.getMonth()]}`, valor: Math.round(v.valor), pedidos: v.pedidos };
+      return {
+        label: `${d.getDate()} ${MES[d.getMonth()]}`,
+        valor: Math.round(v.valor),
+        pedidos: v.pedidos,
+      };
     });
 
-    // Donut por status (todos os pedidos)
     const statusCount = new Map<string, number>();
     for (const p of todos) statusCount.set(p.status, (statusCount.get(p.status) ?? 0) + 1);
     const donut = Array.from(statusCount.entries())
-      .map(([s, value]) => ({ label: STATUS_LABEL[s as never] ?? s, value, color: STATUS_COLORS[s] ?? '#9AA3B2' }))
+      .map(([s, value]) => ({
+        label: STATUS_LABEL[s as never] ?? s,
+        value,
+        color: getChartHex(s),
+      }))
       .sort((a, b) => b.value - a.value);
 
-    // Top clientes por faturamento (período)
     const porCliente = new Map<string, number>();
     for (const p of atual) {
       const nome = p.usuario?.empresa ?? p.usuario?.nome ?? '—';
@@ -158,7 +155,6 @@ export function DashboardPage() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    // Top produtos por faturamento (período)
     const porProduto = new Map<string, number>();
     for (const p of atual) {
       for (const it of p.itens) {
@@ -195,6 +191,12 @@ export function DashboardPage() {
     .filter((i) => i.validadeStatus !== 'ok')
     .sort((a, b) => (a.diasParaVencer ?? 0) - (b.diasParaVencer ?? 0));
 
+  const handleRetry = () => {
+    pedidosQ.refetch();
+    finQ.refetch();
+    estoqueQ.refetch();
+  };
+
   return (
     <div>
       <PageHeader
@@ -217,8 +219,25 @@ export function DashboardPage() {
         }
       />
       <div className="p-4 md:p-8">
-        {loading ? (
-          <Spinner />
+        {hasError ? (
+          <ErrorState
+            message="Não foi possível carregar o dashboard."
+            onRetry={handleRetry}
+          />
+        ) : loading ? (
+          <>
+            {/* KPI skeletons */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+              <SkeletonChartBlock className="lg:col-span-2" />
+              <SkeletonChartBlock />
+            </div>
+          </>
         ) : (
           <>
             {/* KPIs */}
@@ -316,7 +335,7 @@ export function DashboardPage() {
                   ))}
                   {aguardando.length === 0 ? (
                     <p className="px-5 py-10 text-center text-sm text-ink-400">
-                      Nenhum pedido pendente 🎉
+                      Nenhum pedido pendente
                     </p>
                   ) : null}
                 </div>
@@ -344,7 +363,7 @@ export function DashboardPage() {
                   ))}
                   {baixoEstoque.length === 0 ? (
                     <p className="px-5 py-10 text-center text-sm text-ink-400">
-                      Estoque saudável 🎉
+                      Estoque saudável
                     </p>
                   ) : null}
                 </div>
@@ -392,7 +411,7 @@ export function DashboardPage() {
                   ))}
                   {vencimentos.length === 0 ? (
                     <p className="px-5 py-10 text-center text-sm text-ink-400">
-                      Nenhum lote próximo do vencimento 🎉
+                      Nenhum lote próximo do vencimento
                     </p>
                   ) : null}
                 </div>

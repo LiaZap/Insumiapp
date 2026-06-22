@@ -42,6 +42,11 @@ export type Medicamento = z.infer<typeof medicamentoSchema>;
 export const buscaMedicamentoSchema = z.object({
   q: z.string().optional(),
   categoria: medicamentoCategoriaSchema.optional(),
+  // Catálogo (mobile) omite e vê só ativos; back-office passa true p/ ver inativos.
+  incluirInativos: z
+    .union([z.boolean(), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === true || v === 'true'),
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(50),
 });

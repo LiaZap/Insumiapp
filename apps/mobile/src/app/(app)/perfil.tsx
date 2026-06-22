@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
 
 import { SolarIcon } from '@/components/icons/SolarIcon';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { useDeleteAccount } from '@/features/auth/auth.hooks';
+import { authApi } from '@/features/auth/auth.api';
 import { colors } from '@/theme/tokens';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -34,15 +36,26 @@ export default function PerfilScreen() {
       .map((w) => w[0]?.toUpperCase() ?? '')
       .join('') || 'IN';
 
+  const salvarPerfil = useMutation({
+    mutationFn: () =>
+      authApi.atualizarPerfil({ nome: nome.trim(), empresa: empresa.trim() || null }),
+    onSuccess: (updated) => {
+      // Só atualiza o estado local depois que o servidor confirma.
+      updateUser({ nome: updated.nome, empresa: updated.empresa });
+      setEditing(false);
+      Alert.alert('Pronto', 'Perfil atualizado.');
+    },
+    onError: () =>
+      Alert.alert('Erro', 'Não foi possível salvar as alterações. Tente novamente.'),
+  });
+
   const handleSave = () => {
     if (!user) return;
     if (!nome.trim()) {
       Alert.alert('Atenção', 'O nome não pode ficar em branco.');
       return;
     }
-    updateUser({ nome: nome.trim(), empresa: empresa.trim() || null });
-    setEditing(false);
-    Alert.alert('Pronto', 'Perfil atualizado.');
+    salvarPerfil.mutate();
   };
 
   const handleCancel = () => {
@@ -145,7 +158,12 @@ export default function PerfilScreen() {
         <View className="mt-8">
           {editing ? (
             <View className="gap-3">
-              <Button label="Salvar alterações" fullWidth onPress={handleSave} />
+              <Button
+                label={salvarPerfil.isPending ? 'Salvando...' : 'Salvar alterações'}
+                fullWidth
+                disabled={salvarPerfil.isPending}
+                onPress={handleSave}
+              />
               <Button label="Cancelar" variant="secondary" fullWidth onPress={handleCancel} />
             </View>
           ) : (

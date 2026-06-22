@@ -1,26 +1,53 @@
-import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import type { CriarEnderecoInput } from '@insumia/shared';
 
 import { SolarIcon } from '@/components/icons/SolarIcon';
 import { Button } from '@/components/ui/Button';
-import { useEnderecosStore, type Endereco } from '@/features/enderecos/enderecos.store';
+import {
+  useEnderecos,
+  useCriarEndereco,
+  useRemoverEndereco,
+  useDefinirPrincipal,
+  type Endereco,
+} from '@/features/enderecos/enderecos.hooks';
+import { migrarEnderecosLocais } from '@/features/enderecos/enderecos.migrate';
 import { colors } from '@/theme/tokens';
 
 export default function EnderecosScreen() {
   const router = useRouter();
-  const enderecos = useEnderecosStore((s) => s.enderecos);
-  const add = useEnderecosStore((s) => s.add);
-  const remove = useEnderecosStore((s) => s.remove);
-  const setPrincipal = useEnderecosStore((s) => s.setPrincipal);
+  const qc = useQueryClient();
+  const { data: enderecos = [], isLoading } = useEnderecos();
+  const criar = useCriarEndereco();
+  const remover = useRemoverEndereco();
+  const definirPrincipal = useDefinirPrincipal();
 
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Migração única dos endereços que ficaram no AsyncStorage da versão antiga.
+  const migrou = useRef(false);
+  useEffect(() => {
+    if (isLoading || migrou.current) return;
+    migrou.current = true;
+    migrarEnderecosLocais(enderecos.length === 0).then((n) => {
+      if (n > 0) qc.invalidateQueries({ queryKey: ['enderecos'] });
+    });
+  }, [isLoading, enderecos.length, qc]);
 
   const handleRemove = (id: string) =>
     Alert.alert('Remover endereço?', 'Esta ação não pode ser desfeita.', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Remover', style: 'destructive', onPress: () => remove(id) },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () =>
+          remover.mutate(id, {
+            onError: () => Alert.alert('Erro', 'Não foi possível remover o endereço.'),
+          }),
+      },
     ]);
 
   return (
@@ -47,7 +74,11 @@ export default function EnderecosScreen() {
         </Text>
 
         <View className="mt-5 gap-3">
-          {enderecos.length === 0 ? (
+          {isLoading ? (
+            <View className="items-center py-12">
+              <ActivityIndicator color={colors.brand[500]} />
+            </View>
+          ) : enderecos.length === 0 ? (
             <View className="items-center rounded-card bg-white px-6 py-12">
               <SolarIcon name="map-point-bold" size={40} color="#B3B3B3" />
               <Text className="mt-3 font-medium text-base text-ink-700">Nenhum endereço cadastrado</Text>
@@ -60,7 +91,7 @@ export default function EnderecosScreen() {
               <EnderecoCard
                 key={e.id}
                 endereco={e}
-                onSetPrincipal={() => setPrincipal(e.id)}
+                onSetPrincipal={() => definirPrincipal.mutate(e.id)}
                 onRemove={() => handleRemove(e.id)}
               />
             ))
@@ -70,11 +101,14 @@ export default function EnderecosScreen() {
 
       <NovoEnderecoModal
         visible={modalOpen}
+        saving={criar.isPending}
         onClose={() => setModalOpen(false)}
-        onSave={(e) => {
-          add(e);
-          setModalOpen(false);
-        }}
+        onSave={(dto) =>
+          criar.mutate(dto, {
+            onSuccess: () => setModalOpen(false),
+            onError: () => Alert.alert('Erro', 'Não foi possível salvar o endereço.'),
+          })
+        }
       />
     </SafeAreaView>
   );
@@ -89,6 +123,7 @@ function EnderecoCard({
   onSetPrincipal: () => void;
   onRemove: () => void;
 }) {
+  const linhaLocal = [endereco.bairro, `${endereco.cidade} / ${endereco.uf}`].filter(Boolean).join(' • ');
   return (
     <View className="rounded-card bg-white p-5">
       <View className="flex-row items-start justify-between">
@@ -101,9 +136,11 @@ function EnderecoCard({
               </View>
             ) : null}
           </View>
-          <Text className="mt-2 text-sm text-ink-700">{endereco.logradouro}</Text>
+          <Text className="mt-2 text-sm text-ink-700">
+            {[endereco.logradouro, endereco.numero].filter(Boolean).join(', ')}
+          </Text>
           <Text className="mt-0.5 text-xs text-ink-500">
-            {endereco.bairro} • {endereco.cidade} / {endereco.uf} • CEP {endereco.cep}
+            {linhaLocal} • CEP {endereco.cep}
           </Text>
         </View>
         <SolarIcon name="map-point-bold" size={22} color={colors.brand[500]} />
@@ -118,10 +155,7 @@ function EnderecoCard({
             <Text className="font-semibold text-xs text-brand-700">Definir como principal</Text>
           </Pressable>
         ) : null}
-        <Pressable
-          onPress={onRemove}
-          className="rounded-pill px-4 py-2 active:opacity-70"
-        >
+        <Pressable onPress={onRemove} className="rounded-pill px-4 py-2 active:opacity-70">
           <Text className="font-semibold text-xs text-danger">Remover</Text>
         </Pressable>
       </View>
@@ -131,15 +165,18 @@ function EnderecoCard({
 
 function NovoEnderecoModal({
   visible,
+  saving,
   onClose,
   onSave,
 }: {
   visible: boolean;
+  saving: boolean;
   onClose: () => void;
-  onSave: (e: Omit<Endereco, 'id' | 'principal'>) => void;
+  onSave: (e: CriarEnderecoInput) => void;
 }) {
   const [apelido, setApelido] = useState('');
   const [logradouro, setLogradouro] = useState('');
+  const [numero, setNumero] = useState('');
   const [bairro, setBairro] = useState('');
   const [cidade, setCidade] = useState('');
   const [uf, setUf] = useState('');
@@ -148,6 +185,7 @@ function NovoEnderecoModal({
   const reset = () => {
     setApelido('');
     setLogradouro('');
+    setNumero('');
     setBairro('');
     setCidade('');
     setUf('');
@@ -155,11 +193,27 @@ function NovoEnderecoModal({
   };
 
   const handleSave = () => {
-    if (!apelido || !logradouro || !cidade) {
+    if (!apelido.trim() || !logradouro.trim() || !cidade.trim()) {
       Alert.alert('Atenção', 'Preencha pelo menos apelido, logradouro e cidade.');
       return;
     }
-    onSave({ apelido, logradouro, bairro, cidade, uf: uf.toUpperCase(), cep });
+    if (uf.trim().length !== 2) {
+      Alert.alert('Atenção', 'Informe a UF com 2 letras (ex.: SP).');
+      return;
+    }
+    if (cep.replace(/\D/g, '').length < 8) {
+      Alert.alert('Atenção', 'Informe um CEP válido.');
+      return;
+    }
+    onSave({
+      apelido: apelido.trim(),
+      logradouro: logradouro.trim(),
+      numero: numero.trim() || undefined,
+      bairro: bairro.trim() || undefined,
+      cidade: cidade.trim(),
+      uf: uf.trim().toUpperCase(),
+      cep: cep.trim(),
+    });
     reset();
   };
 
@@ -176,7 +230,14 @@ function NovoEnderecoModal({
 
           <ScrollView>
             <ModalField label="Apelido" placeholder="Matriz, Filial, Casa..." value={apelido} onChangeText={setApelido} />
-            <ModalField label="Logradouro" placeholder="Rua, número, complemento" value={logradouro} onChangeText={setLogradouro} />
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <ModalField label="Logradouro" placeholder="Rua, avenida" value={logradouro} onChangeText={setLogradouro} />
+              </View>
+              <View className="w-24">
+                <ModalField label="Número" placeholder="123" value={numero} onChangeText={setNumero} />
+              </View>
+            </View>
             <ModalField label="Bairro" placeholder="" value={bairro} onChangeText={setBairro} />
             <View className="flex-row gap-3">
               <View className="flex-1">
@@ -189,7 +250,7 @@ function NovoEnderecoModal({
             <ModalField label="CEP" placeholder="00000-000" value={cep} onChangeText={setCep} />
           </ScrollView>
 
-          <Button label="Salvar endereço" fullWidth onPress={handleSave} />
+          <Button label={saving ? 'Salvando...' : 'Salvar endereço'} fullWidth disabled={saving} onPress={handleSave} />
         </View>
       </View>
     </Modal>

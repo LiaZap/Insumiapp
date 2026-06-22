@@ -2,7 +2,12 @@ import { ConflictException, ForbiddenException, Injectable, UnauthorizedExceptio
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import type { LoginInput, SignupInput, User as SharedUser } from '@insumia/shared';
+import type {
+  AtualizarPerfilInput,
+  LoginInput,
+  SignupInput,
+  User as SharedUser,
+} from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 
@@ -48,6 +53,18 @@ export class AuthService {
       throw new ForbiddenException('Conta bloqueada. Entre em contato com o suporte.');
     }
     return { user: this.toSharedUser(user), accessToken: this.signToken(user.id) };
+  }
+
+  /** Atualiza nome/empresa do próprio usuário (PATCH /auth/me). */
+  async atualizarPerfil(usuarioId: string, dto: AtualizarPerfilInput): Promise<SharedUser> {
+    const user = await this.prisma.user.update({
+      where: { id: usuarioId },
+      data: {
+        ...(dto.nome !== undefined && { nome: dto.nome }),
+        ...(dto.empresa !== undefined && { empresa: dto.empresa }),
+      },
+    });
+    return this.toSharedUser(user);
   }
 
   private signToken(userId: string): string {

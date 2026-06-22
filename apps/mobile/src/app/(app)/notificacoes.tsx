@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { SolarIcon, type SolarIconName } from '@/components/icons/SolarIcon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { useNotificacoes, type Notificacao } from '@/features/notificacoes/notificacoes.hooks';
+import { useNotificacoes, useMarcarLida, type Notificacao } from '@/features/notificacoes/notificacoes.hooks';
 import { colors } from '@/theme/tokens';
 
 type Tab = 'todas' | 'alertas' | 'pedidos';
@@ -21,6 +21,7 @@ function formatDateBadge(iso: string) {
 }
 
 function Row({ n, onPress }: { n: Notificacao; onPress?: () => void }) {
+  const lida = Boolean(n.lidaEm);
   return (
     <Pressable onPress={onPress} className="flex-row items-center justify-between py-3 active:opacity-70">
       <View className="flex-1 flex-row items-center gap-3">
@@ -28,14 +29,19 @@ function Row({ n, onPress }: { n: Notificacao; onPress?: () => void }) {
           <SolarIcon name={ICONS[n.tipo]} size={20} color={colors.brand[500]} />
         </View>
         <View className="flex-1">
-          <Text className="font-medium text-sm text-[#4A4A4A]">{n.titulo}</Text>
+          <View className="flex-row items-center gap-2">
+            {!lida ? <View className="h-2 w-2 rounded-full bg-brand-500" /> : null}
+            <Text className={`flex-1 text-sm text-[#4A4A4A] ${lida ? 'font-medium' : 'font-bold'}`}>
+              {n.titulo}
+            </Text>
+          </View>
           <Text numberOfLines={1} className="mt-1 text-[10px] text-[#969696]">
-            {n.descricao}
+            {n.corpo}
           </Text>
         </View>
       </View>
       <View className="ml-2 h-7 items-center justify-center rounded-pill bg-[#E7E7E7] px-3">
-        <Text className="font-semibold text-[10px] text-[#636363]">{formatDateBadge(n.data)}</Text>
+        <Text className="font-semibold text-[10px] text-[#636363]">{formatDateBadge(n.criadoEm)}</Text>
       </View>
     </Pressable>
   );
@@ -45,6 +51,7 @@ export default function NotificacoesScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('todas');
   const { data, isLoading } = useNotificacoes();
+  const marcarLida = useMarcarLida();
 
   const filtered = (data ?? []).filter((n) => {
     if (tab === 'todas') return true;
@@ -144,9 +151,10 @@ export default function NotificacoesScreen() {
             <View className="px-5">
               <Row
                 n={item}
-                onPress={() =>
-                  item.pedidoId ? router.push(`/pedido/${item.pedidoId}`) : undefined
-                }
+                onPress={() => {
+                  if (!item.lidaEm) marcarLida.mutate(item.id);
+                  if (item.pedidoId) router.push(`/pedido/${item.pedidoId}`);
+                }}
               />
             </View>
           )}

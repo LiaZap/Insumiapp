@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Conta, ContaStatus, DashboardFinanceiro } from '@insumia/shared';
 import { api } from '../lib/api';
 import { money, date } from '../lib/format';
 import { useTableControls } from '../lib/useTableControls';
 import { exportToCsv } from '../lib/csv';
+import { useToastMutation } from '../lib/useToastMutation';
 import {
   PageHeader,
   Card,
   StatCard,
   Badge,
   EmptyRow,
+  ErrorRow,
   Spinner,
   SearchInput,
   SortHeader,
@@ -44,8 +46,9 @@ export function FinanceiroPage() {
     queryFn: async () => (await api.get<Conta[]>('/api/v1/financeiro/contas')).data,
   });
 
-  const pagar = useMutation({
+  const pagar = useToastMutation({
     mutationFn: async (id: string) => api.patch(`/api/v1/financeiro/contas/${id}/pagar`),
+    successMessage: 'Conta marcada como paga.',
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contas'] });
       qc.invalidateQueries({ queryKey: ['fin-dashboard'] });
@@ -82,7 +85,7 @@ export function FinanceiroPage() {
         action={<ExportButton onClick={handleExport} />}
       />
       <div className="p-4 md:p-8">
-        {dashboard.data ? (
+        {dashboard.isError ? null : dashboard.data ? (
           <div className="mb-6 grid grid-cols-3 gap-4">
             <StatCard label="A pagar" value={money(dashboard.data.totalAPagar)} tone="danger" />
             <StatCard label="A receber" value={money(dashboard.data.totalAReceber)} tone="success" />
@@ -116,55 +119,59 @@ export function FinanceiroPage() {
             <Spinner />
           ) : (
             <>
-              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
-                    <SortHeader label="Descrição" sortKey="descricao" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <th className="px-6 py-3 font-medium">Tipo</th>
-                    <SortHeader label="Vencimento" sortKey="vencimento" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Valor" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <th className="px-6 py-3 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/5">
-                  {table.pageRows.length === 0 ? (
-                    <EmptyRow colSpan={6} message="Nenhuma conta encontrada" />
-                  ) : (
-                    table.pageRows.map((c) => (
-                      <tr key={c.id} className="hover:bg-surface-base">
-                        <td className="px-6 py-3 font-medium text-ink-900">{c.descricao}</td>
-                        <td className="px-6 py-3 text-ink-500">
-                          {c.tipo === 'pagar' ? 'A pagar' : 'A receber'}
-                        </td>
-                        <td className="px-6 py-3 text-ink-500">{date(c.vencimento)}</td>
-                        <td
-                          className={`px-6 py-3 font-semibold ${
-                            c.tipo === 'pagar' ? 'text-danger' : 'text-success'
-                          }`}
-                        >
-                          {c.tipo === 'pagar' ? '-' : '+'}
-                          {money(c.valor)}
-                        </td>
-                        <td className="px-6 py-3">
-                          <Badge status={c.status} label={STATUS_LABEL[c.status]} />
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          {c.status !== 'paga' && c.status !== 'cancelada' ? (
-                            <button
-                              onClick={() => pagar.mutate(c.id)}
-                              disabled={pagar.isPending}
-                              className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-success transition hover:bg-green-100 disabled:opacity-50"
-                            >
-                              Marcar paga
-                            </button>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table></div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                      <SortHeader label="Descrição" sortKey="descricao" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <th className="px-6 py-3 font-medium">Tipo</th>
+                      <SortHeader label="Vencimento" sortKey="vencimento" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Valor" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <th className="px-6 py-3 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {contas.isError ? (
+                      <ErrorRow colSpan={6} message="Não foi possível carregar as contas." onRetry={contas.refetch} />
+                    ) : table.pageRows.length === 0 ? (
+                      <EmptyRow colSpan={6} message="Nenhuma conta encontrada" />
+                    ) : (
+                      table.pageRows.map((c) => (
+                        <tr key={c.id} className="hover:bg-surface-base">
+                          <td className="px-6 py-3 font-medium text-ink-900">{c.descricao}</td>
+                          <td className="px-6 py-3 text-ink-500">
+                            {c.tipo === 'pagar' ? 'A pagar' : 'A receber'}
+                          </td>
+                          <td className="px-6 py-3 text-ink-500">{date(c.vencimento)}</td>
+                          <td
+                            className={`px-6 py-3 font-semibold ${
+                              c.tipo === 'pagar' ? 'text-danger' : 'text-success'
+                            }`}
+                          >
+                            {c.tipo === 'pagar' ? '-' : '+'}
+                            {money(c.valor)}
+                          </td>
+                          <td className="px-6 py-3">
+                            <Badge status={c.status} label={STATUS_LABEL[c.status]} />
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            {c.status !== 'paga' && c.status !== 'cancelada' ? (
+                              <button
+                                onClick={() => pagar.mutate(c.id)}
+                                disabled={pagar.isPending}
+                                className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-success transition hover:bg-green-100 disabled:opacity-50"
+                              >
+                                Marcar paga
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
               <Pagination
                 page={table.page}
                 totalPages={table.totalPages}

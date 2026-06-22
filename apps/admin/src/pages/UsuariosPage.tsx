@@ -1,20 +1,26 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { money, dateTime } from '../lib/format';
 import { useTableControls } from '../lib/useTableControls';
 import { exportToCsv } from '../lib/csv';
+import { useToastMutation } from '../lib/useToastMutation';
 import {
   PageHeader,
   Card,
+  StatCard,
   Badge,
   EmptyRow,
+  ErrorRow,
   Spinner,
   SearchInput,
   SortHeader,
   Pagination,
   ExportButton,
+  Field,
 } from '../components/ui';
+import { Drawer } from '../components/Modal';
+import { ConfirmDialog } from '../components/Modal';
 
 type UserAdmin = {
   id: string;
@@ -45,23 +51,31 @@ export function UsuariosPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState('todos');
   const [selected, setSelected] = useState<UserAdmin | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<UserAdmin | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<UserAdmin | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['users'],
     queryFn: async () => (await api.get<UserAdmin[]>('/api/v1/users')).data,
   });
 
-  const toggleBloqueio = useMutation({
+  const toggleBloqueio = useToastMutation({
     mutationFn: async (id: string) =>
       (await api.patch<{ id: string; bloqueado: boolean }>(`/api/v1/users/${id}/bloquear`)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    successMessage: 'Acesso atualizado com sucesso.',
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      setConfirmToggle(null);
+    },
   });
 
-  const remove = useMutation({
+  const remove = useToastMutation({
     mutationFn: async (id: string) => api.delete(`/api/v1/users/${id}`),
+    successMessage: 'Cliente excluído com sucesso.',
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] });
       setSelected(null);
+      setConfirmRemove(null);
     },
   });
 
@@ -83,7 +97,6 @@ export function UsuariosPage() {
     initialSort: { key: 'data', dir: 'desc' },
   });
 
-  // Stats
   const total = data?.length ?? 0;
   const ativos = data?.filter((u) => !u.bloqueado).length ?? 0;
   const bloqueados = data?.filter((u) => u.bloqueado).length ?? 0;
@@ -99,23 +112,6 @@ export function UsuariosPage() {
       { header: 'Status', value: (u) => (u.bloqueado ? 'Bloqueado' : 'Ativo') },
       { header: 'Cadastro', value: (u) => dateTime(u.criadoEm) },
     ]);
-  };
-
-  const handleToggle = (u: UserAdmin) => {
-    const acao = u.bloqueado ? 'desbloquear' : 'bloquear';
-    if (window.confirm(`Tem certeza que deseja ${acao} ${u.empresa ?? u.nome}?`)) {
-      toggleBloqueio.mutate(u.id);
-    }
-  };
-
-  const handleRemove = (u: UserAdmin) => {
-    const msg =
-      `Excluir definitivamente ${u.empresa ?? u.nome}?\n\n` +
-      `Esta ação apaga: ${u.pedidosCount} pedido(s), estoque, movimentações e contas vinculadas.\n` +
-      `Não há como desfazer.`;
-    if (window.confirm(msg)) {
-      remove.mutate(u.id);
-    }
   };
 
   return (
@@ -174,7 +170,9 @@ export function UsuariosPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/5">
-                    {table.pageRows.length === 0 ? (
+                    {isError ? (
+                      <ErrorRow colSpan={6} message="Não foi possível carregar os clientes." onRetry={refetch} />
+                    ) : table.pageRows.length === 0 ? (
                       <EmptyRow colSpan={6} message="Nenhum cliente encontrado" />
                     ) : (
                       table.pageRows.map((u) => (
@@ -182,12 +180,16 @@ export function UsuariosPage() {
                           key={u.id}
                           onClick={() => setSelected(u)}
                           className="cursor-pointer hover:bg-surface-base"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Ver detalhes de ${u.empresa ?? u.nome}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') setSelected(u);
+                          }}
                         >
                           <td className="px-6 py-3">
                             <p className="font-medium text-ink-900">{u.empresa ?? u.nome}</p>
-                            {u.empresa ? (
-                              <p className="text-xs text-ink-500">{u.nome}</p>
-                            ) : null}
+                            {u.empresa ? <p className="text-xs text-ink-500">{u.nome}</p> : null}
                           </td>
                           <td className="px-6 py-3 text-ink-700">{u.email}</td>
                           <td className="px-6 py-3 text-ink-500">{u.pedidosCount}</td>
@@ -218,107 +220,88 @@ export function UsuariosPage() {
       </div>
 
       {/* Drawer detalhe */}
-      {selected ? (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setSelected(null)}>
-          <div
-            className="h-full w-full overflow-y-auto bg-white md:w-[440px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-black/5 px-6 py-5">
-              <div>
-                <h2 className="text-lg font-bold text-brand-700">{selected.empresa ?? selected.nome}</h2>
-                <p className="text-sm text-ink-500">{selected.nome}</p>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="text-2xl leading-none text-ink-400 hover:text-ink-700"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="px-6 py-5">
-              <div className="mb-5 flex items-center gap-2">
-                {selected.bloqueado ? (
-                  <Badge status="cancelado" label="Bloqueada" />
-                ) : (
-                  <Badge status="confirmado" label="Ativa" />
-                )}
-                <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-600">
-                  {ROLE_LABEL[selected.role]}
-                </span>
-              </div>
-
-              <Field label="E-mail" value={selected.email} />
-              <Field label="Cadastro" value={dateTime(selected.criadoEm)} />
-              <Field label="Pedidos" value={String(selected.pedidosCount)} />
-              <Field label="Valor total em pedidos" value={money(selected.pedidosValor)} />
-
-              {selected.role !== 'admin' ? (
-                <div className="mt-8 space-y-3">
-                  <button
-                    onClick={() => handleToggle(selected)}
-                    disabled={toggleBloqueio.isPending}
-                    className={`w-full rounded-lg px-3 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
-                      selected.bloqueado
-                        ? 'bg-brand-500 text-white hover:bg-brand-600'
-                        : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                    }`}
-                  >
-                    {selected.bloqueado ? 'Desbloquear acesso' : 'Bloquear acesso'}
-                  </button>
-                  <button
-                    onClick={() => handleRemove(selected)}
-                    disabled={remove.isPending}
-                    className="w-full rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-danger transition hover:bg-red-100 disabled:opacity-50"
-                  >
-                    Excluir cliente
-                  </button>
-                  <p className="text-[11px] leading-4 text-ink-400">
-                    Bloquear impede o cliente de logar mas mantém os dados. Excluir apaga conta,
-                    pedidos, estoque e histórico em definitivo.
-                  </p>
-                </div>
+      <Drawer
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected?.empresa ?? selected?.nome ?? ''}
+        subtitle={selected?.nome}
+      >
+        {selected ? (
+          <>
+            <div className="mb-5 flex items-center gap-2">
+              {selected.bloqueado ? (
+                <Badge status="cancelado" label="Bloqueada" />
               ) : (
-                <p className="mt-8 rounded-lg bg-brand-50 px-3 py-3 text-xs text-brand-700">
-                  Contas administradoras não podem ser bloqueadas ou excluídas pelo painel.
-                </p>
+                <Badge status="confirmado" label="Ativa" />
               )}
+              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-600">
+                {ROLE_LABEL[selected.role]}
+              </span>
             </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: 'brand' | 'success' | 'danger';
-}) {
-  const color = {
-    brand: 'text-brand-500',
-    success: 'text-success',
-    danger: 'text-danger',
-  }[tone];
-  return (
-    <Card className="p-4 md:p-5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-400 md:text-xs">{label}</p>
-      <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
-    </Card>
-  );
-}
+            <Field label="E-mail" value={selected.email} />
+            <Field label="Cadastro" value={dateTime(selected.criadoEm)} />
+            <Field label="Pedidos" value={String(selected.pedidosCount)} />
+            <Field label="Valor total em pedidos" value={money(selected.pedidosValor)} />
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mb-3">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">{label}</p>
-      <p className="mt-1 text-sm text-ink-900">{value}</p>
+            {selected.role !== 'admin' ? (
+              <div className="mt-8 space-y-3">
+                <button
+                  onClick={() => setConfirmToggle(selected)}
+                  disabled={toggleBloqueio.isPending}
+                  className={`w-full rounded-lg px-3 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
+                    selected.bloqueado
+                      ? 'bg-brand-500 text-white hover:bg-brand-600'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  }`}
+                >
+                  {selected.bloqueado ? 'Desbloquear acesso' : 'Bloquear acesso'}
+                </button>
+                <button
+                  onClick={() => setConfirmRemove(selected)}
+                  disabled={remove.isPending}
+                  className="w-full rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-danger transition hover:bg-red-100 disabled:opacity-50"
+                >
+                  Excluir cliente
+                </button>
+                <p className="text-[11px] leading-4 text-ink-400">
+                  Bloquear impede o cliente de logar mas mantém os dados. Excluir apaga conta,
+                  pedidos, estoque e histórico em definitivo.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-8 rounded-lg bg-brand-50 px-3 py-3 text-xs text-brand-700">
+                Contas administradoras não podem ser bloqueadas ou excluídas pelo painel.
+              </p>
+            )}
+          </>
+        ) : null}
+      </Drawer>
+
+      {/* Confirmar bloqueio/desbloqueio */}
+      <ConfirmDialog
+        open={!!confirmToggle}
+        onClose={() => setConfirmToggle(null)}
+        onConfirm={() => confirmToggle && toggleBloqueio.mutate(confirmToggle.id)}
+        title={confirmToggle?.bloqueado ? 'Desbloquear acesso' : 'Bloquear acesso'}
+        description={`Tem certeza que deseja ${confirmToggle?.bloqueado ? 'desbloquear' : 'bloquear'} ${confirmToggle?.empresa ?? confirmToggle?.nome ?? 'este cliente'}?`}
+        confirmLabel={confirmToggle?.bloqueado ? 'Desbloquear' : 'Bloquear'}
+        variant={confirmToggle?.bloqueado ? 'default' : 'danger'}
+        isPending={toggleBloqueio.isPending}
+      />
+
+      {/* Confirmar exclusão definitiva — requer digitar nome */}
+      <ConfirmDialog
+        open={!!confirmRemove}
+        onClose={() => setConfirmRemove(null)}
+        onConfirm={() => confirmRemove && remove.mutate(confirmRemove.id)}
+        title="Excluir cliente definitivamente"
+        description={`Esta ação apaga ${confirmRemove?.pedidosCount ?? 0} pedido(s), estoque, movimentações e contas vinculadas. Não há como desfazer.`}
+        confirmLabel="Excluir"
+        confirmText={confirmRemove?.empresa ?? confirmRemove?.nome ?? ''}
+        variant="danger"
+        isPending={remove.isPending}
+      />
     </div>
   );
 }

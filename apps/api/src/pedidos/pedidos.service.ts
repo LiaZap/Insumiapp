@@ -44,6 +44,23 @@ export class PedidosService {
     );
   }
 
+  /** Snapshot textual do endereço, congelado no momento do pedido. */
+  private formatarEndereco(e: {
+    apelido: string;
+    logradouro: string;
+    numero: string | null;
+    complemento: string | null;
+    bairro: string | null;
+    cidade: string;
+    uf: string;
+    cep: string;
+  }): string {
+    const linha1 = [e.logradouro, e.numero].filter(Boolean).join(', ');
+    const linha2 = [e.bairro, `${e.cidade}/${e.uf}`].filter(Boolean).join(' - ');
+    const partes = [`${e.apelido}:`, linha1, e.complemento, linha2, `CEP ${e.cep}`].filter(Boolean);
+    return partes.join(' • ');
+  }
+
   async list(usuarioId: string) {
     return this.prisma.pedido.findMany({
       where: { usuarioId },
@@ -225,6 +242,21 @@ export class PedidosService {
       0,
     );
 
+    // Destino de entrega: valida posse (anti-IDOR) e congela um snapshot
+    // textual para preservar o histórico se o endereço mudar/for removido.
+    let enderecoEntregaId: string | null = null;
+    let enderecoEntregaTexto: string | null = null;
+    if (dto.enderecoEntregaId) {
+      const endereco = await this.prisma.endereco.findUnique({
+        where: { id: dto.enderecoEntregaId },
+      });
+      if (!endereco || endereco.usuarioId !== usuarioId) {
+        throw new BadRequestException('Endereço de entrega inválido');
+      }
+      enderecoEntregaId = endereco.id;
+      enderecoEntregaTexto = this.formatarEndereco(endereco);
+    }
+
     const numero = `PED-${Date.now().toString(36).toUpperCase()}`;
 
     const pedido = await this.prisma.$transaction(async (tx) => {
@@ -235,6 +267,8 @@ export class PedidosService {
           total,
           observacao: dto.observacao,
           usuarioId,
+          enderecoEntregaId,
+          enderecoEntregaTexto,
           itens: { create: itens },
         },
         include: { itens: { include: { medicamento: true } } },

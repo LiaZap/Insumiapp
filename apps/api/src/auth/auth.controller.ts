@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
+  atualizarPerfilSchema,
   forgotPasswordSchema,
   loginSchema,
   resetPasswordSchema,
   signupSchema,
+  type AtualizarPerfilInput,
   type ForgotPasswordInput,
   type LoginInput,
   type ResetPasswordInput,
@@ -29,6 +31,17 @@ export class AuthController {
   @HttpCode(200)
   async login(@Body(new ZodValidationPipe(loginSchema)) dto: LoginInput) {
     return this.auth.login(dto);
+  }
+
+  /** Atualiza o perfil (nome/empresa) do próprio usuário autenticado. */
+  @Patch('me')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  async atualizarPerfil(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(atualizarPerfilSchema)) dto: AtualizarPerfilInput,
+  ) {
+    return this.auth.atualizarPerfil(req.user.id, dto);
   }
 
   /** Exclusão definitiva da conta — exigência da App Store (Guideline 5.1.1(v)). */

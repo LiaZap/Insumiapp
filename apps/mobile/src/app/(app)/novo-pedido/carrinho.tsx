@@ -11,6 +11,7 @@ import {
   selectTotalItens,
 } from '@/features/pedidos/carrinho.store';
 import { useCriarPedido } from '@/features/pedidos/pedidos.hooks';
+import { useEnderecos } from '@/features/enderecos/enderecos.hooks';
 
 export default function CarrinhoScreen() {
   const router = useRouter();
@@ -19,9 +20,23 @@ export default function CarrinhoScreen() {
   const setQty = useCarrinhoStore((s) => s.setQty);
   const clear = useCarrinhoStore((s) => s.clear);
   const criar = useCriarPedido();
+  const { data: enderecos = [], isLoading: carregandoEnderecos } = useEnderecos();
 
   const handleSubmit = () => {
     if (itens.length === 0) return;
+    // Destino de entrega obrigatório: usa o principal (snapshot é feito no servidor).
+    const principal = enderecos.find((e) => e.principal) ?? enderecos[0];
+    if (!principal) {
+      Alert.alert(
+        'Endereço de entrega',
+        'Cadastre um endereço de entrega antes de finalizar o pedido.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Adicionar endereço', onPress: () => router.push('/enderecos') },
+        ],
+      );
+      return;
+    }
     criar.mutate(
       {
         itens: itens.map((i) => ({
@@ -29,6 +44,7 @@ export default function CarrinhoScreen() {
           quantidade: i.quantidade,
           precoUnitario: Number(i.medicamento.precoUnitario),
         })),
+        enderecoEntregaId: principal.id,
       },
       {
         onSuccess: () => router.replace('/novo-pedido/confirmacao'),
@@ -105,9 +121,9 @@ export default function CarrinhoScreen() {
               </View>
               <Pressable
                 onPress={handleSubmit}
-                disabled={criar.isPending}
+                disabled={criar.isPending || carregandoEnderecos}
                 className="h-[59px] w-[168px] flex-row items-center justify-between rounded-card bg-white/15 pl-4 pr-2.5 active:opacity-80"
-                style={criar.isPending ? { opacity: 0.5 } : undefined}
+                style={criar.isPending || carregandoEnderecos ? { opacity: 0.5 } : undefined}
               >
                 <Text className="font-semibold text-sm text-white">
                   {criar.isPending ? 'Enviando...' : 'Enviar Pedido'}

@@ -13,7 +13,10 @@ import {
 } from 'recharts';
 import { money } from '../lib/format';
 
-const BRAND = '#1B498C';
+// Cores consolidadas — hex definidos na paleta do tailwind.config.js (brand-500, ink-500)
+const BRAND = '#1B498C';    // brand-500
+const AXIS_TICK = '#9AA3B2'; // ink-400 aproximado (não está na paleta tw mas mantido para recharts)
+const AXIS_LABEL = '#5B6573';
 
 /** Área de faturamento com gradiente. */
 export function RevenueAreaChart({
@@ -32,14 +35,14 @@ export function RevenueAreaChart({
         </defs>
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11, fill: '#9AA3B2' }}
+          tick={{ fontSize: 11, fill: AXIS_TICK }}
           axisLine={false}
           tickLine={false}
           interval="preserveStartEnd"
           minTickGap={32}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: '#9AA3B2' }}
+          tick={{ fontSize: 11, fill: AXIS_TICK }}
           axisLine={false}
           tickLine={false}
           width={56}
@@ -62,7 +65,7 @@ export function RevenueAreaChart({
   );
 }
 
-/** Donut de pedidos por status. */
+/** Donut de pedidos por status — cores vêm dos tokens centralizados. */
 export function StatusDonut({
   data,
 }: {
@@ -124,7 +127,7 @@ export function RankingBars({
         <YAxis
           type="category"
           dataKey="label"
-          tick={{ fontSize: 11, fill: '#5B6573' }}
+          tick={{ fontSize: 11, fill: AXIS_LABEL }}
           axisLine={false}
           tickLine={false}
           width={150}

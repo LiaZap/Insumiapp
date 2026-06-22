@@ -39,3 +39,10 @@ export const userSchema = z.object({
   role: z.enum(['admin', 'comprador', 'financeiro']).default('comprador'),
 });
 export type User = z.infer<typeof userSchema>;
+
+// Edição de perfil do próprio usuário (PATCH /users/me). empresa = null limpa o campo.
+export const atualizarPerfilSchema = z.object({
+  nome: z.string().min(2, 'Nome muito curto').optional(),
+  empresa: z.string().min(2).nullable().optional(),
+});
+export type AtualizarPerfilInput = z.infer<typeof atualizarPerfilSchema>;

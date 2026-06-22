@@ -10,6 +10,7 @@ import {
   Card,
   Badge,
   EmptyRow,
+  ErrorState,
   Spinner,
   SearchInput,
   SortHeader,
@@ -47,7 +48,7 @@ function ValidadeCell({ item }: { item: EstoqueResumo }) {
   return <span className="text-ink-500">{d}</span>;
 }
 
-function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
+function EstoqueTab({ rows, isError, onRetry }: { rows: EstoqueResumo[]; isError: boolean; onRetry: () => void }) {
   const table = useTableControls(rows, {
     searchText: (i) => `${i.medicamento.nome} ${i.medicamento.fabricante ?? ''} ${i.lote ?? ''}`,
     sortAccessors: {
@@ -74,6 +75,14 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
       { header: 'Status', value: (i) => STATUS_LABEL[i.status] },
     ]);
 
+  if (isError) {
+    return (
+      <Card>
+        <ErrorState message="Não foi possível carregar o estoque." onRetry={onRetry} />
+      </Card>
+    );
+  }
+
   return (
     <>
       <div className="mb-4 flex justify-between">
@@ -81,47 +90,49 @@ function EstoqueTab({ rows }: { rows: EstoqueResumo[] }) {
         <ExportButton onClick={handleExport} />
       </div>
       <Card>
-        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
-              <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <th className="px-6 py-3 font-medium">Lote</th>
-              <SortHeader label="Validade" sortKey="validade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <SortHeader label="Quantidade" sortKey="quantidade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <SortHeader label="Valor em estoque" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/5">
-            {table.pageRows.length === 0 ? (
-              <EmptyRow colSpan={6} message="Nenhum produto encontrado" />
-            ) : (
-              table.pageRows.map((i) => (
-                <tr key={i.medicamento.id} className="hover:bg-surface-base">
-                  <td className="px-6 py-3 font-medium text-ink-900">{i.medicamento.nome}</td>
-                  <td className="px-6 py-3 text-ink-500">{i.lote ?? '—'}</td>
-                  <td className="px-6 py-3">
-                    <ValidadeCell item={i} />
-                  </td>
-                  <td className="px-6 py-3 font-semibold text-ink-900">{i.quantidade} un</td>
-                  <td className="px-6 py-3 text-ink-700">
-                    {money(Number(i.medicamento.precoUnitario ?? 0) * i.quantidade)}
-                  </td>
-                  <td className="px-6 py-3">
-                    <Badge status={i.status} label={STATUS_LABEL[i.status]} />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table></div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <th className="px-6 py-3 font-medium">Lote</th>
+                <SortHeader label="Validade" sortKey="validade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <SortHeader label="Quantidade" sortKey="quantidade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <SortHeader label="Valor em estoque" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {table.pageRows.length === 0 ? (
+                <EmptyRow colSpan={6} message="Nenhum produto encontrado" />
+              ) : (
+                table.pageRows.map((i) => (
+                  <tr key={i.medicamento.id} className="hover:bg-surface-base">
+                    <td className="px-6 py-3 font-medium text-ink-900">{i.medicamento.nome}</td>
+                    <td className="px-6 py-3 text-ink-500">{i.lote ?? '—'}</td>
+                    <td className="px-6 py-3">
+                      <ValidadeCell item={i} />
+                    </td>
+                    <td className="px-6 py-3 font-semibold text-ink-900">{i.quantidade} un</td>
+                    <td className="px-6 py-3 text-ink-700">
+                      {money(Number(i.medicamento.precoUnitario ?? 0) * i.quantidade)}
+                    </td>
+                    <td className="px-6 py-3">
+                      <Badge status={i.status} label={STATUS_LABEL[i.status]} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
         <Pagination page={table.page} totalPages={table.totalPages} total={table.total} onPage={table.setPage} />
       </Card>
     </>
   );
 }
 
-function MovimentacoesTab({ rows }: { rows: Movimentacao[] }) {
+function MovimentacoesTab({ rows, isError, onRetry }: { rows: Movimentacao[]; isError: boolean; onRetry: () => void }) {
   const table = useTableControls(rows, {
     searchText: (m) => `${m.medicamento.nome} ${m.usuario?.nome ?? ''} ${TIPO_LABEL[m.tipo]}`,
     sortAccessors: {
@@ -142,6 +153,14 @@ function MovimentacoesTab({ rows }: { rows: Movimentacao[] }) {
       { header: 'Data', value: (m) => dateTime(m.criadoEm) },
     ]);
 
+  if (isError) {
+    return (
+      <Card>
+        <ErrorState message="Não foi possível carregar as movimentações." onRetry={onRetry} />
+      </Card>
+    );
+  }
+
   return (
     <>
       <div className="mb-4 flex justify-between">
@@ -149,38 +168,40 @@ function MovimentacoesTab({ rows }: { rows: Movimentacao[] }) {
         <ExportButton onClick={handleExport} />
       </div>
       <Card>
-        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
-              <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <SortHeader label="Tipo" sortKey="tipo" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <SortHeader label="Quantidade" sortKey="quantidade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-              <th className="px-6 py-3 font-medium">Responsável</th>
-              <SortHeader label="Data" sortKey="data" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/5">
-            {table.pageRows.length === 0 ? (
-              <EmptyRow colSpan={5} message="Sem movimentações" />
-            ) : (
-              table.pageRows.map((m) => {
-                const isSaida = ['saida', 'perda', 'transferencia'].includes(m.tipo);
-                return (
-                  <tr key={m.id} className="hover:bg-surface-base">
-                    <td className="px-6 py-3 font-medium text-ink-900">{m.medicamento.nome}</td>
-                    <td className="px-6 py-3 text-ink-500">{TIPO_LABEL[m.tipo]}</td>
-                    <td className={`px-6 py-3 font-semibold ${isSaida ? 'text-danger' : 'text-success'}`}>
-                      {isSaida ? '-' : '+'}
-                      {m.quantidade}
-                    </td>
-                    <td className="px-6 py-3 text-ink-700">{m.usuario?.nome ?? '—'}</td>
-                    <td className="px-6 py-3 text-ink-500">{dateTime(m.criadoEm)}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table></div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                <SortHeader label="Produto" sortKey="produto" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <SortHeader label="Tipo" sortKey="tipo" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <SortHeader label="Quantidade" sortKey="quantidade" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                <th className="px-6 py-3 font-medium">Responsável</th>
+                <SortHeader label="Data" sortKey="data" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {table.pageRows.length === 0 ? (
+                <EmptyRow colSpan={5} message="Sem movimentações" />
+              ) : (
+                table.pageRows.map((m) => {
+                  const isSaida = ['saida', 'perda', 'transferencia'].includes(m.tipo);
+                  return (
+                    <tr key={m.id} className="hover:bg-surface-base">
+                      <td className="px-6 py-3 font-medium text-ink-900">{m.medicamento.nome}</td>
+                      <td className="px-6 py-3 text-ink-500">{TIPO_LABEL[m.tipo]}</td>
+                      <td className={`px-6 py-3 font-semibold ${isSaida ? 'text-danger' : 'text-success'}`}>
+                        {isSaida ? '-' : '+'}
+                        {m.quantidade}
+                      </td>
+                      <td className="px-6 py-3 text-ink-700">{m.usuario?.nome ?? '—'}</td>
+                      <td className="px-6 py-3 text-ink-500">{dateTime(m.criadoEm)}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
         <Pagination page={table.page} totalPages={table.totalPages} total={table.total} onPage={table.setPage} />
       </Card>
     </>
@@ -233,14 +254,22 @@ export function EstoquePage() {
               <Spinner />
             </Card>
           ) : (
-            <EstoqueTab rows={estoque.data ?? []} />
+            <EstoqueTab
+              rows={estoque.data ?? []}
+              isError={estoque.isError}
+              onRetry={estoque.refetch}
+            />
           )
         ) : movs.isLoading ? (
           <Card>
             <Spinner />
           </Card>
         ) : (
-          <MovimentacoesTab rows={movs.data ?? []} />
+          <MovimentacoesTab
+            rows={movs.data ?? []}
+            isError={movs.isError}
+            onRetry={movs.refetch}
+          />
         )}
       </div>
     </div>

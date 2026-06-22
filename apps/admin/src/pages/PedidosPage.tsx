@@ -1,22 +1,25 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Pedido, PedidoStatus } from '@insumia/shared';
 import { api } from '../lib/api';
 import { money, dateTime } from '../lib/format';
 import { STATUS_LABEL, NEXT_STATUS } from '../lib/labels';
 import { useTableControls } from '../lib/useTableControls';
 import { exportToCsv } from '../lib/csv';
+import { useToastMutation } from '../lib/useToastMutation';
 import {
   PageHeader,
   Card,
   Badge,
   EmptyRow,
+  ErrorRow,
   Spinner,
   SearchInput,
   SortHeader,
   Pagination,
   ExportButton,
 } from '../components/ui';
+import { Drawer } from '../components/Modal';
 import { CotacaoForm } from '../components/CotacaoForm';
 
 type PedidoAdmin = Pedido & {
@@ -36,14 +39,15 @@ export function PedidosPage() {
   const [selected, setSelected] = useState<PedidoAdmin | null>(null);
   const [recotar, setRecotar] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['pedidos-todos'],
     queryFn: async () => (await api.get<PedidoAdmin[]>('/api/v1/pedidos?escopo=todos')).data,
   });
 
-  const updateStatus = useMutation({
+  const updateStatus = useToastMutation({
     mutationFn: async ({ id, status }: { id: string; status: PedidoStatus }) =>
       (await api.patch<PedidoAdmin>(`/api/v1/pedidos/${id}/status`, { status })).data,
+    successMessage: 'Status do pedido atualizado.',
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: ['pedidos-todos'] });
       setSelected(updated);
@@ -115,45 +119,56 @@ export function PedidosPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
-                    <SortHeader label="Pedido" sortKey="numero" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Cliente" sortKey="cliente" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <th className="px-6 py-3 font-medium">Itens</th>
-                    <SortHeader label="Valor" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Data" sortKey="data" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/5">
-                  {table.pageRows.length === 0 ? (
-                    <EmptyRow colSpan={6} message="Nenhum pedido encontrado" />
-                  ) : (
-                    table.pageRows.map((p) => (
-                      <tr
-                        key={p.id}
-                        onClick={() => {
-                          setRecotar(false);
-                          setSelected(p);
-                        }}
-                        className="cursor-pointer hover:bg-surface-base"
-                      >
-                        <td className="px-6 py-3 font-medium text-ink-900">{p.numero}</td>
-                        <td className="px-6 py-3 text-ink-700">
-                          {p.usuario?.empresa ?? p.usuario?.nome ?? '—'}
-                        </td>
-                        <td className="px-6 py-3 text-ink-500">{p.itens.length}</td>
-                        <td className="px-6 py-3 font-semibold text-ink-900">{money(p.total)}</td>
-                        <td className="px-6 py-3 text-ink-500">{dateTime(p.criadoEm)}</td>
-                        <td className="px-6 py-3">
-                          <Badge status={p.status} label={STATUS_LABEL[p.status]} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                      <SortHeader label="Pedido" sortKey="numero" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Cliente" sortKey="cliente" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <th className="px-6 py-3 font-medium">Itens</th>
+                      <SortHeader label="Valor" sortKey="valor" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Data" sortKey="data" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Status" sortKey="status" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {isError ? (
+                      <ErrorRow colSpan={6} message="Não foi possível carregar os pedidos." onRetry={refetch} />
+                    ) : table.pageRows.length === 0 ? (
+                      <EmptyRow colSpan={6} message="Nenhum pedido encontrado" />
+                    ) : (
+                      table.pageRows.map((p) => (
+                        <tr
+                          key={p.id}
+                          onClick={() => {
+                            setRecotar(false);
+                            setSelected(p);
+                          }}
+                          className="cursor-pointer hover:bg-surface-base"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Ver pedido ${p.numero}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              setRecotar(false);
+                              setSelected(p);
+                            }
+                          }}
+                        >
+                          <td className="px-6 py-3 font-medium text-ink-900">{p.numero}</td>
+                          <td className="px-6 py-3 text-ink-700">
+                            {p.usuario?.empresa ?? p.usuario?.nome ?? '—'}
+                          </td>
+                          <td className="px-6 py-3 text-ink-500">{p.itens.length}</td>
+                          <td className="px-6 py-3 font-semibold text-ink-900">{money(p.total)}</td>
+                          <td className="px-6 py-3 text-ink-500">{dateTime(p.criadoEm)}</td>
+                          <td className="px-6 py-3">
+                            <Badge status={p.status} label={STATUS_LABEL[p.status]} />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
               <Pagination
                 page={table.page}
@@ -167,116 +182,101 @@ export function PedidosPage() {
       </div>
 
       {/* Drawer detalhe */}
-      {selected ? (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setSelected(null)}>
-          <div
-            className="h-full w-full overflow-y-auto bg-white md:w-[440px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-black/5 px-6 py-5">
-              <div>
-                <h2 className="text-lg font-bold text-brand-700">{selected.numero}</h2>
-                <p className="text-sm text-ink-500">
-                  {selected.usuario?.empresa ?? selected.usuario?.nome ?? '—'}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="text-2xl leading-none text-ink-400 hover:text-ink-700"
-              >
-                ×
-              </button>
+      <Drawer
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected?.numero}
+        subtitle={selected?.usuario?.empresa ?? selected?.usuario?.nome ?? '—'}
+      >
+        {selected ? (
+          <>
+            <div className="flex items-center justify-between">
+              <Badge status={selected.status} label={STATUS_LABEL[selected.status]} />
+              <span className="text-lg font-bold text-brand-700">{money(selected.total)}</span>
             </div>
 
-            <div className="px-6 py-5">
-              <div className="flex items-center justify-between">
-                <Badge status={selected.status} label={STATUS_LABEL[selected.status]} />
-                <span className="text-lg font-bold text-brand-700">{money(selected.total)}</span>
+            {/* Motor de cotação */}
+            {selected.status === 'aguardando_cotacao' ? (
+              <div className="mt-5">
+                <CotacaoForm pedido={selected} onDone={() => setSelected(null)} />
               </div>
-
-              {/* Motor de cotação */}
-              {selected.status === 'aguardando_cotacao' ? (
-                <div className="mt-5">
-                  <CotacaoForm pedido={selected} onDone={() => setSelected(null)} />
-                </div>
-              ) : selected.status === 'cotado' ? (
-                <div className="mt-5 rounded-xl border border-brand-100 bg-brand-50/40 p-4">
-                  <p className="text-sm font-semibold text-brand-600">Cotação enviada</p>
-                  <p className="mt-1 text-xs text-ink-500">
-                    Aguardando resposta do cliente.
-                    {selected.cotacaoValidaAte
-                      ? ` Válida até ${dateTime(selected.cotacaoValidaAte)}.`
-                      : ''}
-                  </p>
-                  {selected.prazoEntregaDias != null ? (
-                    <p className="mt-1 text-xs text-ink-500">
-                      Prazo de entrega: {selected.prazoEntregaDias} dias
-                    </p>
-                  ) : null}
-                  <button
-                    onClick={() => setRecotar(true)}
-                    className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-brand-600 ring-1 ring-brand-100 hover:bg-brand-50"
-                  >
-                    Refazer cotação
-                  </button>
-                  {recotar ? (
-                    <div className="mt-3">
-                      <CotacaoForm pedido={selected} onDone={() => setSelected(null)} />
-                    </div>
-                  ) : null}
-                </div>
-              ) : NEXT_STATUS[selected.status].length > 0 ? (
-                <div className="mt-5">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
-                    Avançar status
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {NEXT_STATUS[selected.status].map((next) => (
-                      <button
-                        key={next}
-                        disabled={updateStatus.isPending}
-                        onClick={() => updateStatus.mutate({ id: selected.id, status: next })}
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
-                          next === 'cancelado'
-                            ? 'bg-red-50 text-danger hover:bg-red-100'
-                            : 'bg-brand-500 text-white hover:bg-brand-600'
-                        }`}
-                      >
-                        {STATUS_LABEL[next]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-5 text-sm text-ink-400">Pedido finalizado.</p>
-              )}
-
-              <div className="mt-6">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
-                  Itens ({selected.itens.length})
+            ) : selected.status === 'cotado' ? (
+              <div className="mt-5 rounded-xl border border-brand-100 bg-brand-50/40 p-4">
+                <p className="text-sm font-semibold text-brand-600">Cotação enviada</p>
+                <p className="mt-1 text-xs text-ink-500">
+                  Aguardando resposta do cliente.
+                  {selected.cotacaoValidaAte
+                    ? ` Válida até ${dateTime(selected.cotacaoValidaAte)}.`
+                    : ''}
                 </p>
-                <div className="divide-y divide-black/5 rounded-xl border border-black/5">
-                  {selected.itens.map((it) => (
-                    <div key={it.id} className="flex items-center justify-between px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-ink-900">{it.medicamento.nome}</p>
-                        <p className="text-xs text-ink-500">
-                          {it.medicamento.fabricante} • {it.quantidade}x
-                        </p>
-                      </div>
-                      <span className="text-sm font-semibold text-ink-700">
-                        {money(Number(it.precoUnitario) * it.quantidade)}
-                      </span>
-                    </div>
+                {selected.prazoEntregaDias != null ? (
+                  <p className="mt-1 text-xs text-ink-500">
+                    Prazo de entrega: {selected.prazoEntregaDias} dias
+                  </p>
+                ) : null}
+                <button
+                  onClick={() => setRecotar(true)}
+                  className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-brand-600 ring-1 ring-brand-100 hover:bg-brand-50"
+                >
+                  Refazer cotação
+                </button>
+                {recotar ? (
+                  <div className="mt-3">
+                    <CotacaoForm pedido={selected} onDone={() => setSelected(null)} />
+                  </div>
+                ) : null}
+              </div>
+            ) : NEXT_STATUS[selected.status].length > 0 ? (
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+                  Avançar status
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {NEXT_STATUS[selected.status].map((next) => (
+                    <button
+                      key={next}
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: selected.id, status: next })}
+                      className={`rounded-lg px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
+                        next === 'cancelado'
+                          ? 'bg-red-50 text-danger hover:bg-red-100'
+                          : 'bg-brand-500 text-white hover:bg-brand-600'
+                      }`}
+                    >
+                      {STATUS_LABEL[next]}
+                    </button>
                   ))}
                 </div>
               </div>
+            ) : (
+              <p className="mt-5 text-sm text-ink-400">Pedido finalizado.</p>
+            )}
 
-              <p className="mt-6 text-xs text-ink-400">Criado em {dateTime(selected.criadoEm)}</p>
+            <div className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+                Itens ({selected.itens.length})
+              </p>
+              <div className="divide-y divide-black/5 rounded-xl border border-black/5">
+                {selected.itens.map((it) => (
+                  <div key={it.id} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-ink-900">{it.medicamento.nome}</p>
+                      <p className="text-xs text-ink-500">
+                        {it.medicamento.fabricante} • {it.quantidade}x
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-ink-700">
+                      {money(Number(it.precoUnitario) * it.quantidade)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+
+            <p className="mt-6 text-xs text-ink-400">Criado em {dateTime(selected.criadoEm)}</p>
+          </>
+        ) : null}
+      </Drawer>
     </div>
   );
 }

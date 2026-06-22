@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { LoginInput, SignupInput, User } from '@insumia/shared';
+import type { AtualizarPerfilInput, LoginInput, SignupInput, User } from '@insumia/shared';
 
 type AuthResponse = {
   user: User;
@@ -14,6 +14,10 @@ export const authApi = {
   },
   signup: async (dto: SignupInput): Promise<AuthResponse> => {
     const { data } = await api.post<AuthResponse>('/api/v1/auth/signup', dto);
+    return data;
+  },
+  atualizarPerfil: async (dto: AtualizarPerfilInput): Promise<User> => {
+    const { data } = await api.patch<User>('/api/v1/auth/me', dto);
     return data;
   },
   deleteAccount: async (): Promise<void> => {

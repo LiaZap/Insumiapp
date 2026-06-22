@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { NotificacaoTipo } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type ExpoPushMessage = {
@@ -37,6 +38,29 @@ export class PushService {
     await this.prisma.pushToken.deleteMany({ where: { token } });
   }
 
+  /**
+   * Persiste a notificação no histórico do usuário (centro de notificações
+   * in-app). Gravada SEMPRE — independe de o usuário ter token de push.
+   */
+  private async persistirNotificacao(
+    usuarioId: string,
+    titulo: string,
+    corpo: string,
+    data?: Record<string, unknown>,
+  ): Promise<void> {
+    const tipoRaw = typeof data?.tipo === 'string' ? data.tipo : null;
+    const tipo: NotificacaoTipo =
+      tipoRaw === 'pedido' || tipoRaw === 'alerta' ? tipoRaw : NotificacaoTipo.sistema;
+    const pedidoId = typeof data?.pedidoId === 'string' ? data.pedidoId : null;
+    try {
+      await this.prisma.notificacao.create({
+        data: { usuarioId, titulo, corpo, tipo, pedidoId },
+      });
+    } catch (err) {
+      this.logger.warn(`Falha ao persistir notificação para user ${usuarioId}`, err as Error);
+    }
+  }
+
   /** Envia uma notificação para todos os dispositivos de um usuário. */
   async enviarParaUsuario(
     usuarioId: string,
@@ -44,6 +68,9 @@ export class PushService {
     corpo: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
+    // Histórico primeiro: a notificação fica salva mesmo sem dispositivo registrado.
+    await this.persistirNotificacao(usuarioId, titulo, corpo, data);
+
     const tokens = await this.prisma.pushToken.findMany({
       where: { userId: usuarioId },
       select: { token: true },

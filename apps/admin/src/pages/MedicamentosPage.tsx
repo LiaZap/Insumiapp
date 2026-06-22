@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CATEGORIA_LABEL,
   medicamentoCategoriaSchema,
@@ -10,16 +10,20 @@ import { api } from '../lib/api';
 import { money } from '../lib/format';
 import { useTableControls } from '../lib/useTableControls';
 import { exportToCsv } from '../lib/csv';
+import { useToastMutation } from '../lib/useToastMutation';
 import {
   PageHeader,
   Card,
   EmptyRow,
+  ErrorRow,
   Spinner,
   SearchInput,
   SortHeader,
   Pagination,
   ExportButton,
+  Field,
 } from '../components/ui';
+import { Modal } from '../components/Modal';
 
 type Form = {
   nome: string;
@@ -49,13 +53,13 @@ export function MedicamentosPage() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['medicamentos-admin'],
     queryFn: async () =>
-      (await api.get<{ data: Medicamento[] }>('/api/v1/medicamentos?perPage=100')).data.data,
+      (await api.get<{ data: Medicamento[] }>('/api/v1/medicamentos?perPage=100&incluirInativos=true')).data.data,
   });
 
-  const criar = useMutation({
+  const criar = useToastMutation({
     mutationFn: async (f: Form) =>
       api.post('/api/v1/medicamentos', {
         nome: f.nome,
@@ -66,6 +70,7 @@ export function MedicamentosPage() {
         precoUnitario: Number(f.precoUnitario.replace(',', '.')),
         receituario: f.receituario,
       }),
+    successMessage: 'Produto cadastrado com sucesso.',
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['medicamentos-admin'] });
       setModalOpen(false);
@@ -137,38 +142,42 @@ export function MedicamentosPage() {
             <Spinner />
           ) : (
             <>
-              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
-                    <SortHeader label="Produto" sortKey="nome" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Fabricante" sortKey="fabricante" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <SortHeader label="Categoria" sortKey="categoria" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <th className="px-6 py-3 font-medium">Apresentação</th>
-                    <SortHeader label="Preço" sortKey="preco" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
-                    <th className="px-6 py-3 font-medium">Receita</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/5">
-                  {table.pageRows.length === 0 ? (
-                    <EmptyRow colSpan={6} message="Nenhum produto encontrado" />
-                  ) : (
-                    table.pageRows.map((m) => (
-                      <tr key={m.id} className="hover:bg-surface-base">
-                        <td className="px-6 py-3 font-medium text-ink-900">{m.nome}</td>
-                        <td className="px-6 py-3 text-ink-700">{m.fabricante ?? '—'}</td>
-                        <td className="px-6 py-3 text-ink-500">{CATEGORIA_LABEL[m.categoria]}</td>
-                        <td className="px-6 py-3 text-ink-500">
-                          {[m.apresentacao, m.dosagem].filter(Boolean).join(' • ') || '—'}
-                        </td>
-                        <td className="px-6 py-3 font-semibold text-ink-900">
-                          {money(m.precoUnitario)}
-                        </td>
-                        <td className="px-6 py-3 text-ink-500">{m.receituario ? 'Sim' : 'Não'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table></div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-black/5 text-xs uppercase tracking-wide text-ink-400">
+                      <SortHeader label="Produto" sortKey="nome" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Fabricante" sortKey="fabricante" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <SortHeader label="Categoria" sortKey="categoria" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <th className="px-6 py-3 font-medium">Apresentação</th>
+                      <SortHeader label="Preço" sortKey="preco" activeKey={table.sortKey} dir={table.sortDir} onSort={table.toggleSort} />
+                      <th className="px-6 py-3 font-medium">Receita</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {isError ? (
+                      <ErrorRow colSpan={6} message="Não foi possível carregar o catálogo." onRetry={refetch} />
+                    ) : table.pageRows.length === 0 ? (
+                      <EmptyRow colSpan={6} message="Nenhum produto encontrado" />
+                    ) : (
+                      table.pageRows.map((m) => (
+                        <tr key={m.id} className="hover:bg-surface-base">
+                          <td className="px-6 py-3 font-medium text-ink-900">{m.nome}</td>
+                          <td className="px-6 py-3 text-ink-700">{m.fabricante ?? '—'}</td>
+                          <td className="px-6 py-3 text-ink-500">{CATEGORIA_LABEL[m.categoria]}</td>
+                          <td className="px-6 py-3 text-ink-500">
+                            {[m.apresentacao, m.dosagem].filter(Boolean).join(' • ') || '—'}
+                          </td>
+                          <td className="px-6 py-3 font-semibold text-ink-900">
+                            {money(m.precoUnitario)}
+                          </td>
+                          <td className="px-6 py-3 text-ink-500">{m.receituario ? 'Sim' : 'Não'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
               <Pagination
                 page={table.page}
                 totalPages={table.totalPages}
@@ -180,108 +189,80 @@ export function MedicamentosPage() {
         </Card>
       </div>
 
-      {modalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-brand-700">Novo produto</h2>
-            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-              <Field label="Nome" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} />
-              <Field
-                label="Fabricante"
-                value={form.fabricante}
-                onChange={(v) => setForm({ ...form, fabricante: v })}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="Apresentação"
-                  value={form.apresentacao}
-                  onChange={(v) => setForm({ ...form, apresentacao: v })}
-                />
-                <Field
-                  label="Dosagem"
-                  value={form.dosagem}
-                  onChange={(v) => setForm({ ...form, dosagem: v })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">Categoria</label>
-                  <select
-                    value={form.categoria}
-                    onChange={(e) =>
-                      setForm({ ...form, categoria: e.target.value as MedicamentoCategoria })
-                    }
-                    className="w-full rounded-lg border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-                  >
-                    {CATEGORIAS.map((c) => (
-                      <option key={c} value={c}>
-                        {CATEGORIA_LABEL[c]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Field
-                  label="Preço (R$)"
-                  value={form.precoUnitario}
-                  onChange={(v) => setForm({ ...form, precoUnitario: v })}
-                />
-              </div>
-              <label className="flex items-center gap-2 text-sm text-ink-700">
-                <input
-                  type="checkbox"
-                  checked={form.receituario}
-                  onChange={(e) => setForm({ ...form, receituario: e.target.checked })}
-                />
-                Exige receituário
-              </label>
-              {error ? <p className="text-sm text-danger">{error}</p> : null}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 rounded-xl border border-black/10 py-2.5 text-sm font-medium text-ink-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={criar.isPending}
-                  className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {criar.isPending ? 'Salvando...' : 'Salvar'}
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setError(null); setForm(EMPTY); }}
+        title="Novo produto"
+      >
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Nome" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} />
+          <Field
+            label="Fabricante"
+            value={form.fabricante}
+            onChange={(v) => setForm({ ...form, fabricante: v })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="Apresentação"
+              value={form.apresentacao}
+              onChange={(v) => setForm({ ...form, apresentacao: v })}
+            />
+            <Field
+              label="Dosagem"
+              value={form.dosagem}
+              onChange={(v) => setForm({ ...form, dosagem: v })}
+            />
           </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-ink-700">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-      />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-700">Categoria</label>
+              <select
+                value={form.categoria}
+                onChange={(e) =>
+                  setForm({ ...form, categoria: e.target.value as MedicamentoCategoria })
+                }
+                className="w-full rounded-lg border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              >
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORIA_LABEL[c]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Field
+              label="Preço (R$)"
+              value={form.precoUnitario}
+              onChange={(v) => setForm({ ...form, precoUnitario: v })}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-ink-700">
+            <input
+              type="checkbox"
+              checked={form.receituario}
+              onChange={(e) => setForm({ ...form, receituario: e.target.checked })}
+            />
+            Exige receituário
+          </label>
+          {error ? <p className="text-sm text-danger">{error}</p> : null}
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => { setModalOpen(false); setError(null); setForm(EMPTY); }}
+              className="flex-1 rounded-xl border border-black/10 py-2.5 text-sm font-medium text-ink-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={criar.isPending}
+              className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {criar.isPending ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
