@@ -86,10 +86,14 @@ export function Field({
   label,
   value,
   onChange,
+  type = 'text',
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange?: (v: string) => void;
+  type?: string;
+  placeholder?: string;
 }) {
   if (onChange) {
     return (
@@ -98,6 +102,8 @@ export function Field({
           {label}
         </label>
         <input
+          type={type}
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full rounded-lg border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"

@@ -1,11 +1,24 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import type { CriarUsuarioAdminInput, UserRole } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+
+const USER_SELECT = {
+  id: true,
+  nome: true,
+  email: true,
+  empresa: true,
+  role: true,
+  bloqueado: true,
+  criadoEm: true,
+} as const;
 
 @Injectable()
 export class UsersService {
@@ -45,6 +58,58 @@ export class UsersService {
         pedidosValor: Number(g?._sum.total ?? 0),
       };
     });
+  }
+
+  /** Admin cria um usuário (membro de equipe ou cliente). */
+  async criar(dto: CriarUsuarioAdminInput, requesterId: string) {
+    const email = dto.email.trim().toLowerCase();
+    const exists = await this.prisma.user.findUnique({ where: { email } });
+    if (exists) throw new ConflictException('E-mail já cadastrado');
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        nome: dto.nome,
+        email,
+        passwordHash,
+        empresa: dto.empresa ?? null,
+        role: dto.role,
+      },
+      select: USER_SELECT,
+    });
+    await this.audit.registrar({
+      atorId: requesterId,
+      acao: 'user.criar',
+      entidade: 'User',
+      entidadeId: user.id,
+      depois: { email: user.email, role: user.role },
+    });
+    return { ...user, pedidosCount: 0, pedidosValor: 0 };
+  }
+
+  /** Promove/rebaixa o papel — admin-only e auditável (RBAC.md). */
+  async alterarRole(targetId: string, novoRole: UserRole, requesterId: string) {
+    if (targetId === requesterId) {
+      throw new BadRequestException('Você não pode alterar o próprio papel.');
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) throw new NotFoundException('Usuário não encontrado');
+    if (target.role === novoRole) {
+      return { id: target.id, role: target.role };
+    }
+    const atualizado = await this.prisma.user.update({
+      where: { id: targetId },
+      data: { role: novoRole },
+      select: { id: true, role: true },
+    });
+    await this.audit.registrar({
+      atorId: requesterId,
+      acao: 'user.role',
+      entidade: 'User',
+      entidadeId: targetId,
+      antes: { role: target.role },
+      depois: { role: novoRole },
+    });
+    return atualizado;
   }
 
   /** Toggle do bloqueio. Admin não pode se bloquear. */

@@ -46,3 +46,20 @@ export const atualizarPerfilSchema = z.object({
   empresa: z.string().min(2).nullable().optional(),
 });
 export type AtualizarPerfilInput = z.infer<typeof atualizarPerfilSchema>;
+
+export const userRoleSchema = z.enum(['admin', 'comprador', 'financeiro']);
+export type UserRole = z.infer<typeof userRoleSchema>;
+
+// Admin cria um membro de equipe ou cliente no back-office.
+export const criarUsuarioAdminSchema = z.object({
+  nome: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  empresa: z.string().min(2).optional(),
+  role: userRoleSchema,
+});
+export type CriarUsuarioAdminInput = z.infer<typeof criarUsuarioAdminSchema>;
+
+// Promove/rebaixa o papel de um usuário (admin-only, auditável).
+export const alterarRoleSchema = z.object({ role: userRoleSchema });
+export type AlterarRoleInput = z.infer<typeof alterarRoleSchema>;
