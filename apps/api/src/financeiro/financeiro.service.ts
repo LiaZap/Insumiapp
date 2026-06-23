@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { CriarContaInput, DashboardFinanceiro } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -39,7 +39,18 @@ export class FinanceiroService {
     });
   }
 
-  async criar(dto: CriarContaInput, usuarioId: string) {
+  async criar(dto: CriarContaInput, requester: { id: string; role: string }) {
+    // Conta vinculada a pedido: comprador só pode referenciar o PRÓPRIO pedido
+    // (anti-IDOR — senão leria o número de pedido de outra clínica via include).
+    if (dto.pedidoId && !this.isOperador(requester.role)) {
+      const pedido = await this.prisma.pedido.findUnique({
+        where: { id: dto.pedidoId },
+        select: { usuarioId: true },
+      });
+      if (!pedido || pedido.usuarioId !== requester.id) {
+        throw new BadRequestException('Pedido inválido');
+      }
+    }
     return this.prisma.conta.create({
       data: {
         tipo: dto.tipo,
@@ -47,7 +58,7 @@ export class FinanceiroService {
         valor: dto.valor,
         vencimento: new Date(dto.vencimento),
         pedidoId: dto.pedidoId,
-        usuarioId,
+        usuarioId: requester.id,
       },
       include: {
         pedido: { select: { id: true, numero: true } },
@@ -96,10 +107,11 @@ export class FinanceiroService {
     // Comprador vê só o próprio financeiro; admin/financeiro veem a operação.
     const escopo = this.isOperador(requester.role) ? {} : { usuarioId: requester.id };
 
-    // Marca contas vencidas (manutenção — passou do vencimento e ainda aberta)
+    // Marca contas vencidas (manutenção — passou do vencimento e ainda aberta).
+    // Escopado: comprador não altera contas de outras clínicas.
     const now = new Date();
     await this.prisma.conta.updateMany({
-      where: { status: 'aberta', vencimento: { lt: now } },
+      where: { status: 'aberta', vencimento: { lt: now }, ...escopo },
       data: { status: 'vencida' },
     });
 

@@ -93,6 +93,11 @@ export class UsersService {
     }
     const target = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundException('Usuário não encontrado');
+    // Contas admin são protegidas (igual a bloquear/excluir) — evita um admin
+    // rebaixar outro pelo painel; mudanças em admin exigem acesso ao banco.
+    if (target.role === 'admin') {
+      throw new ForbiddenException('Contas admin não podem ter o papel alterado pelo painel.');
+    }
     if (target.role === novoRole) {
       return { id: target.id, role: target.role };
     }

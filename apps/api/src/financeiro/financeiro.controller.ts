@@ -30,7 +30,7 @@ export class FinanceiroController {
     @Req() req: AuthRequest,
     @Body(new ZodValidationPipe(criarContaSchema)) dto: CriarContaInput,
   ) {
-    return this.fin.criar(dto, req.user.id);
+    return this.fin.criar(dto, req.user);
   }
 
   @Patch('contas/:id/pagar')

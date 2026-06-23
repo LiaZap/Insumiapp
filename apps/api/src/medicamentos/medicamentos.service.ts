@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MedicamentosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async buscar(input: BuscaMedicamentoInput) {
+  async buscar(input: BuscaMedicamentoInput, role?: string) {
     const { q, categoria, incluirInativos, page, perPage } = input;
     const where: Prisma.MedicamentoWhereInput = {
       ...(!incluirInativos && { ativo: true }),
@@ -29,7 +29,10 @@ export class MedicamentosService {
         orderBy: { nome: 'asc' },
       }),
     ]);
-    return { data, page, perPage, total };
+    // `custo` (preço de compra/margem da Insumia) é confidencial: só operador vê.
+    const operador = role === 'admin' || role === 'financeiro';
+    const itens = operador ? data : data.map((m) => ({ ...m, custo: null }));
+    return { data: itens, page, perPage, total };
   }
 
   async criar(dto: Prisma.MedicamentoCreateInput) {

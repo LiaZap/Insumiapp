@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   buscaMedicamentoSchema,
@@ -8,18 +8,25 @@ import {
 } from '@insumia/shared';
 import { MedicamentosService } from './medicamentos.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { AuthGuard, type AuthRequest } from '../common/auth.guard';
 import { AdminGuard } from '../common/admin.guard';
 
 type UpsertMedicamento = UpsertMedicamentoInput;
 
 @ApiTags('medicamentos')
+@ApiBearerAuth()
 @Controller('medicamentos')
 export class MedicamentosController {
   constructor(private readonly service: MedicamentosService) {}
 
+  // Autenticado (e nao publico): o custo so volta para operador (admin/financeiro).
   @Get()
-  buscar(@Query(new ZodValidationPipe(buscaMedicamentoSchema)) input: BuscaMedicamentoInput) {
-    return this.service.buscar(input);
+  @UseGuards(AuthGuard)
+  buscar(
+    @Req() req: AuthRequest,
+    @Query(new ZodValidationPipe(buscaMedicamentoSchema)) input: BuscaMedicamentoInput,
+  ) {
+    return this.service.buscar(input, req.user.role);
   }
 
   @Post()
