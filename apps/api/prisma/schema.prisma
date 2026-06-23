@@ -139,6 +139,7 @@ model Medicamento {
   estoque       EstoqueItem[]
   movimentacoes Movimentacao[]
   agrupamentos  Agrupamento[]
+  lotes         Lote[]
 
   @@index([nome])
   @@index([categoria])
@@ -214,9 +215,11 @@ model Agrupamento {
   notaFiscal   String?
   finalizadoEm DateTime?
 
-  medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
-  itens       PedidoItem[]
-  lances      Lance[]
+  medicamento  Medicamento  @relation(fields: [medicamentoId], references: [id])
+  itens        PedidoItem[]
+  lances       Lance[]
+  lotes        Lote[]
+  notasFiscais NotaFiscal[]
 
   @@index([status])
   @@index([medicamentoId])
@@ -233,7 +236,8 @@ model Fornecedor {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  lances Lance[]
+  lances       Lance[]
+  notasFiscais NotaFiscal[]
 }
 
 // Lance — oferta de um fornecedor para um agrupamento
@@ -376,4 +380,41 @@ model AuditLog {
   @@index([entidade, entidadeId])
   @@index([atorId])
   @@index([criadoEm])
+}
+
+// Lote de um medicamento (rastreabilidade — Vigilância Sanitária). Gerado ao
+// finalizar a compra (agrupamento). Aditivo: não substitui o `lote` texto-livre
+// legado em EstoqueItem/Movimentacao.
+model Lote {
+  id            String    @id @default(uuid())
+  medicamentoId String
+  numero        String
+  validade      DateTime?
+  fabricante    String?
+  agrupamentoId String?
+  criadoEm      DateTime  @default(now())
+
+  medicamento Medicamento  @relation(fields: [medicamentoId], references: [id])
+  agrupamento Agrupamento? @relation(fields: [agrupamentoId], references: [id], onDelete: SetNull)
+
+  @@index([medicamentoId])
+  @@index([agrupamentoId])
+}
+
+// Nota fiscal da compra ao fornecedor (vinculada ao agrupamento finalizado).
+model NotaFiscal {
+  id            String    @id @default(uuid())
+  fornecedorId  String?
+  numero        String
+  serie         String?
+  valor         Decimal?  @db.Decimal(12, 2)
+  emitidaEm     DateTime?
+  agrupamentoId String?
+  criadoEm      DateTime  @default(now())
+
+  fornecedor  Fornecedor?  @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  agrupamento Agrupamento? @relation(fields: [agrupamentoId], references: [id], onDelete: SetNull)
+
+  @@index([fornecedorId])
+  @@index([agrupamentoId])
 }

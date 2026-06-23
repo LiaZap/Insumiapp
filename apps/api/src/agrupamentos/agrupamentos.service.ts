@@ -73,6 +73,8 @@ export class AgrupamentosService {
           orderBy: { id: 'asc' },
         },
         lances: { orderBy: { precoUnitario: 'asc' } },
+        lotes: { orderBy: { criadoEm: 'asc' } },
+        notasFiscais: { orderBy: { criadoEm: 'asc' } },
       },
     });
     if (!a) throw new NotFoundException('Agrupamento não encontrado');
@@ -125,6 +127,23 @@ export class AgrupamentosService {
             finalizadoEm: a.finalizadoEm.toISOString(),
           }
         : null,
+      // Rastreabilidade estruturada (entidades) — preenchida nas compras novas.
+      lotes: a.lotes.map((l) => ({
+        id: l.id,
+        numero: l.numero,
+        validade: l.validade?.toISOString() ?? null,
+        fabricante: l.fabricante,
+        criadoEm: l.criadoEm.toISOString(),
+      })),
+      notasFiscais: a.notasFiscais.map((n) => ({
+        id: n.id,
+        numero: n.numero,
+        serie: n.serie,
+        valor: n.valor != null ? Number(n.valor) : null,
+        emitidaEm: n.emitidaEm?.toISOString() ?? null,
+        fornecedorId: n.fornecedorId,
+        criadoEm: n.criadoEm.toISOString(),
+      })),
     };
   }
 
@@ -134,21 +153,48 @@ export class AgrupamentosService {
     dto: { lote: string; validade?: string; fabricante?: string; notaFiscal?: string },
     atorId?: string,
   ) {
-    const a = await this.prisma.agrupamento.findUnique({ where: { id } });
+    const a = await this.prisma.agrupamento.findUnique({
+      where: { id },
+      include: { lances: { where: { vencedor: true } } },
+    });
     if (!a) throw new NotFoundException('Agrupamento não encontrado');
     if (a.status !== 'cotado') {
       throw new BadRequestException('Só agrupamentos cotados podem ser finalizados');
     }
-    await this.prisma.agrupamento.update({
-      where: { id },
-      data: {
-        status: 'finalizado',
-        lote: dto.lote,
-        validade: dto.validade ? new Date(dto.validade) : null,
-        fabricante: dto.fabricante,
-        notaFiscal: dto.notaFiscal,
-        finalizadoEm: new Date(),
-      },
+    const validade = dto.validade ? new Date(dto.validade) : null;
+    const vencedor = a.lances[0];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.agrupamento.update({
+        where: { id },
+        data: {
+          status: 'finalizado',
+          lote: dto.lote,
+          validade,
+          fabricante: dto.fabricante,
+          notaFiscal: dto.notaFiscal,
+          finalizadoEm: new Date(),
+        },
+      });
+      // Rastreabilidade por entidade (aditivo — não substitui o texto acima).
+      await tx.lote.create({
+        data: {
+          medicamentoId: a.medicamentoId,
+          numero: dto.lote,
+          validade,
+          fabricante: dto.fabricante ?? null,
+          agrupamentoId: id,
+        },
+      });
+      if (dto.notaFiscal) {
+        await tx.notaFiscal.create({
+          data: {
+            numero: dto.notaFiscal,
+            fornecedorId: vencedor?.fornecedorId ?? null,
+            agrupamentoId: id,
+          },
+        });
+      }
     });
     await this.audit.registrar({
       atorId,

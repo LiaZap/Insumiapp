@@ -67,6 +67,27 @@ export const finalizarAgrupamentoSchema = z.object({
 });
 export type FinalizarAgrupamentoInput = z.infer<typeof finalizarAgrupamentoSchema>;
 
+// Rastreabilidade estruturada (entidades) — preenchida nas compras finalizadas.
+export const loteSchema = z.object({
+  id: z.string().uuid(),
+  numero: z.string(),
+  validade: z.string().nullable().optional(),
+  fabricante: z.string().nullable().optional(),
+  criadoEm: z.string(),
+});
+export type Lote = z.infer<typeof loteSchema>;
+
+export const notaFiscalSchema = z.object({
+  id: z.string().uuid(),
+  numero: z.string(),
+  serie: z.string().nullable().optional(),
+  valor: z.union([z.string(), z.number()]).nullable().optional(),
+  emitidaEm: z.string().nullable().optional(),
+  fornecedorId: z.string().uuid().nullable().optional(),
+  criadoEm: z.string(),
+});
+export type NotaFiscal = z.infer<typeof notaFiscalSchema>;
+
 // Detalhe
 export const agrupamentoDetalheSchema = agrupamentoResumoSchema.extend({
   publicToken: z.string(),
@@ -74,5 +95,7 @@ export const agrupamentoDetalheSchema = agrupamentoResumoSchema.extend({
   linhas: z.array(agrupamentoLinhaSchema),
   lances: z.array(lanceSchema),
   rastreabilidade: rastreabilidadeSchema.nullable().optional(),
+  lotes: z.array(loteSchema).optional(),
+  notasFiscais: z.array(notaFiscalSchema).optional(),
 });
 export type AgrupamentoDetalhe = z.infer<typeof agrupamentoDetalheSchema>;
