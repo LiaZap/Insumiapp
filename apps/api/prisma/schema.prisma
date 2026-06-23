@@ -349,6 +349,15 @@ model Notificacao {
   @@index([usuarioId, lidaEm])
 }
 
+// Parâmetros de negócio editáveis no back-office (sem deploy): limiar de
+// estoque baixo, validade da cotação, etc. Key-value simples (valor como texto).
+model ConfiguracaoSistema {
+  chave        String   @id
+  valor        String
+  descricao    String?
+  atualizadoEm DateTime @updatedAt
+}
+
 // Trilha de auditoria de ações sensíveis (status de pedido, escolha de vencedor,
 // baixa de conta, bloqueio/exclusão de usuário). Json aqui é payload de auditoria
 // (antes/depois), não dado de domínio. atorId SetNull para não travar exclusão LGPD.

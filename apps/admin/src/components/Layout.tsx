@@ -10,6 +10,7 @@ import {
   Package,
   DollarSign,
   Users,
+  Settings,
   LogOut,
   ChevronRight,
   Menu,
@@ -61,7 +62,8 @@ const NAV_GROUPS: NavGroup[] = [
     heading: 'Administração',
     separator: true,
     items: [
-      { to: '/usuarios', label: 'Clientes', icon: Users },
+      { to: '/usuarios', label: 'Equipe & Clientes', icon: Users },
+      { to: '/configuracoes', label: 'Configurações', icon: Settings },
     ],
   },
 ];

@@ -15,6 +15,7 @@ import { PushModule } from './push/push.module';
 import { EnderecosModule } from './enderecos/enderecos.module';
 import { NotificacoesModule } from './notificacoes/notificacoes.module';
 import { AuditModule } from './audit/audit.module';
+import { ConfigModule as SistemaConfigModule } from './config/config.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AuditModule } from './audit/audit.module';
     EnderecosModule,
     NotificacoesModule,
     AuditModule,
+    SistemaConfigModule,
   ],
 })
 export class AppModule {}

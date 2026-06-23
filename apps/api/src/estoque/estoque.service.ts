@@ -8,35 +8,42 @@ import {
   type ValidadeStatus,
 } from '@insumia/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '../config/config.service';
 
 type EstoqueItemComMed = Prisma.EstoqueItemGetPayload<{ include: { medicamento: true } }>;
 
 const TIPOS_SAIDA = new Set(['saida', 'perda', 'transferencia']);
 const MS_DIA = 86_400_000;
+const LIMIAR_BAIXO_PADRAO = 10;
 
 @Injectable()
 export class EstoqueService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   /** Estoque da clínica logada. */
   async listarResumo(usuarioId: string): Promise<EstoqueResumo[]> {
+    const limiar = await this.config.getNumero('estoque.limiar_baixo', LIMIAR_BAIXO_PADRAO);
     const items = await this.prisma.estoqueItem.findMany({
       where: { usuarioId },
       include: { medicamento: true },
     });
-    return this.agregarResumo(items);
+    return this.agregarResumo(items, limiar);
   }
 
   /** Visão consolidada da operação — soma o estoque de TODAS as clínicas. */
   async listarConsolidado(): Promise<EstoqueResumo[]> {
+    const limiar = await this.config.getNumero('estoque.limiar_baixo', LIMIAR_BAIXO_PADRAO);
     const items = await this.prisma.estoqueItem.findMany({
       include: { medicamento: true },
     });
-    return this.agregarResumo(items);
+    return this.agregarResumo(items, limiar);
   }
 
   /** Agrega EstoqueItem por medicamentoId (somando lotes/clínicas) → resumo + FEFO. */
-  private agregarResumo(items: EstoqueItemComMed[]): EstoqueResumo[] {
+  private agregarResumo(items: EstoqueItemComMed[], limiarBaixo: number): EstoqueResumo[] {
     // lote mais próximo de vencer por medicamento (FEFO)
     const proxValidade = new Map<string, { validade: Date; lote: string | null }>();
     for (const item of items) {
@@ -52,7 +59,7 @@ export class EstoqueService {
       const cur = byMed.get(item.medicamentoId);
       const med = item.medicamento;
       const qty = cur ? cur.quantidade + item.quantidade : item.quantidade;
-      const status: EstoqueStatus = qty <= 0 ? 'esgotado' : qty < 10 ? 'baixo' : 'ok';
+      const status: EstoqueStatus = qty <= 0 ? 'esgotado' : qty < limiarBaixo ? 'baixo' : 'ok';
 
       const prox = proxValidade.get(item.medicamentoId);
       let validadeStatus: ValidadeStatus = 'ok';

@@ -8,4 +8,5 @@ export * from './schemas/estoque';
 export * from './schemas/financeiro';
 export * from './schemas/endereco';
 export * from './schemas/notificacao';
+export * from './schemas/configuracao';
 export * from './schemas/common';

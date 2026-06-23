@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { ConfigService } from '../config/config.service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -10,6 +11,7 @@ export class AgrupamentosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -247,6 +249,7 @@ export class AgrupamentosService {
       throw new BadRequestException('Agrupamento não está em cotação');
     }
 
+    const validadeHoras = await this.config.getNumero('cotacao.validade_horas', 48);
     await this.prisma.$transaction(async (tx) => {
       // Marca vencedor
       await tx.lance.updateMany({ where: { agrupamentoId: id }, data: { vencedor: false } });
@@ -275,7 +278,7 @@ export class AgrupamentosService {
           (it) => it.agrupamento?.status === 'cotado' || it.agrupamento?.status === 'finalizado',
         );
         const validaAte = new Date();
-        validaAte.setHours(validaAte.getHours() + 48);
+        validaAte.setHours(validaAte.getHours() + validadeHoras);
         await tx.pedido.update({
           where: { id: pedidoId },
           data: {

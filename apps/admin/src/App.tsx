@@ -11,6 +11,7 @@ import { MedicamentosPage } from './pages/MedicamentosPage';
 import { EstoquePage } from './pages/EstoquePage';
 import { FinanceiroPage } from './pages/FinanceiroPage';
 import { UsuariosPage } from './pages/UsuariosPage';
+import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
 import { RecuperarPage } from './pages/RecuperarPage';
 import { CotarPublicoPage } from './pages/CotarPublicoPage';
 import { PrivacidadePage } from './pages/PrivacidadePage';
@@ -103,6 +104,14 @@ export function App() {
           element={
             <ErrorBoundary>
               <UsuariosPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/configuracoes"
+          element={
+            <ErrorBoundary>
+              <ConfiguracoesPage />
             </ErrorBoundary>
           }
         />

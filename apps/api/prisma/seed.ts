@@ -297,6 +297,17 @@ async function main() {
     });
   }
 
+  // Configurações de negócio (parâmetros editáveis no back-office).
+  // update:{} preserva valores já ajustados pelo admin em re-seeds.
+  const configSeed = [
+    { chave: 'estoque.limiar_baixo', valor: '10', descricao: 'Quantidade abaixo da qual o estoque é marcado como "baixo".' },
+    { chave: 'cotacao.validade_horas', valor: '48', descricao: 'Horas de validade da cotação enviada à clínica.' },
+    { chave: 'cotacao.margem_padrao', valor: '30', descricao: 'Margem padrão (%) sugerida ao montar a cotação.' },
+  ];
+  for (const c of configSeed) {
+    await prisma.configuracaoSistema.upsert({ where: { chave: c.chave }, update: {}, create: c });
+  }
+
   // eslint-disable-next-line no-console
   console.log(
     `Seed ok: ${medicamentosSeed.length} medicamentos + estoque + ${clinicasSeed.length} clínicas + pedidos + ${agrupamentoPorMed.size} agrupamentos`,
